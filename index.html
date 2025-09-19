@@ -302,7 +302,7 @@
                             <i class="fas fa-search"></i> 検索
                         </a>
                     </li>
-                    <li class="nav-item">
+                    <li class="nav-item" id="nav-profile-item" style="display: none;">
                         <a class="nav-link" href="profile.html" id="nav-profile">
                             <i class="fas fa-user"></i> プロフィール
                         </a>
@@ -472,7 +472,7 @@
             <i class="fas fa-plus-circle"></i>
             作成
         </a>
-        <a href="#" class="bottom-nav-item" onclick="showProfile()">
+        <a href="#" class="bottom-nav-item" id="bottom-nav-profile" onclick="showProfile()" style="display: none;">
             <i class="fas fa-user"></i>
             マイページ
         </a>
@@ -580,6 +580,16 @@
                     navAuth.innerHTML = '<i class="fas fa-sign-out-alt"></i> ログアウト';
                     navAuth.href = '#';
                     navAuth.onclick = () => this.logout();
+
+                    // プロフィールボタンを表示
+                    const navProfileItem = document.getElementById('nav-profile-item');
+                    if (navProfileItem) {
+                        navProfileItem.style.display = 'block';
+                    }
+                    const bottomNavProfile = document.getElementById('bottom-nav-profile');
+                    if (bottomNavProfile) {
+                        bottomNavProfile.style.display = 'block';
+                    }
                 } else {
                     console.log('No valid session or user, setting login UI');
                     // sessionTokenがない場合は強制的にユーザーデータもクリア
@@ -591,6 +601,16 @@
                     navAuth.innerHTML = '<i class="fas fa-sign-in-alt"></i> ログイン';
                     navAuth.href = 'auth.html';
                     navAuth.onclick = null;
+
+                    // プロフィールボタンを非表示
+                    const navProfileItem = document.getElementById('nav-profile-item');
+                    if (navProfileItem) {
+                        navProfileItem.style.display = 'none';
+                    }
+                    const bottomNavProfile = document.getElementById('bottom-nav-profile');
+                    if (bottomNavProfile) {
+                        bottomNavProfile.style.display = 'none';
+                    }
                 }
                 
                 // Add demo login option if not logged in
