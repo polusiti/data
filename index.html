@@ -558,6 +558,13 @@
             }
 
             async updateAuthStatus() {
+                // まずlocalStorageの状態を確認
+                const storedUser = localStorage.getItem('currentUser');
+                const storedToken = localStorage.getItem('sessionToken');
+
+                console.log('localStorage currentUser:', storedUser);
+                console.log('localStorage sessionToken:', storedToken);
+
                 const user = this.authClient.getCurrentUser();
                 const authStatus = document.getElementById('auth-status');
                 const navAuth = document.getElementById('nav-auth');
@@ -566,14 +573,20 @@
                 console.log('sessionToken:', this.authClient.sessionToken);
                 console.log('isLoggedIn:', this.authClient.isLoggedIn());
 
-                if (user) {
-                    console.log('User found, setting logout UI');
+                // 正しい判定: sessionTokenがあり、かつユーザーが存在する場合のみログイン状態
+                if (this.authClient.sessionToken && user) {
+                    console.log('User found with valid session, setting logout UI');
                     authStatus.innerHTML = `<i class="fas fa-user"></i> ${user.displayName || user.userId}`;
                     navAuth.innerHTML = '<i class="fas fa-sign-out-alt"></i> ログアウト';
                     navAuth.href = '#';
                     navAuth.onclick = () => this.logout();
                 } else {
-                    console.log('No user found, setting login UI');
+                    console.log('No valid session or user, setting login UI');
+                    // sessionTokenがない場合は強制的にユーザーデータもクリア
+                    if (!this.authClient.sessionToken) {
+                        this.authClient.currentUser = null;
+                        localStorage.removeItem('currentUser');
+                    }
                     authStatus.innerHTML = '<i class="fas fa-sign-in-alt"></i> ログインしてください';
                     navAuth.innerHTML = '<i class="fas fa-sign-in-alt"></i> ログイン';
                     navAuth.href = 'auth.html';
@@ -581,7 +594,7 @@
                 }
                 
                 // Add demo login option if not logged in
-                if (!user) {
+                if (!this.authClient.sessionToken || !user) {
                     setTimeout(() => {
                         const demoButton = document.createElement('button');
                         demoButton.className = 'btn btn-outline-primary btn-sm ms-2';
@@ -819,6 +832,10 @@
                     // 強制的にローカルデータをクリア
                     localStorage.removeItem('sessionToken');
                     localStorage.removeItem('currentUser');
+                    localStorage.removeItem('webauthn_challenge');
+                    localStorage.removeItem('webauthn_credential');
+                    sessionStorage.clear();
+
                     this.authClient.sessionToken = null;
                     this.authClient.currentUser = null;
                     console.log('Local data cleared');
@@ -830,8 +847,8 @@
                 } catch (error) {
                     console.error('Logout error:', error);
                     // エラーが発生してもローカルデータをクリア
-                    localStorage.removeItem('sessionToken');
-                    localStorage.removeItem('currentUser');
+                    localStorage.clear();
+                    sessionStorage.clear();
                     window.location.reload();
                 }
             }
