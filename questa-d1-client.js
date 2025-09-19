@@ -804,6 +804,112 @@ class QuestaD1Client {
         }
     }
 
+    /**
+     * Add a problem to the database
+     * @param {Object} problem - Problem object to add
+     * @returns {Promise<Object>} Add result
+     */
+    async addProblem(problem) {
+        try {
+            // Ensure database is initialized
+            await this.initializeDatabase();
+
+            const sql = `
+                INSERT INTO problems (subject, title, content, difficulty, author, created_at, views, solved)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            `;
+
+            const params = [
+                problem.subject,
+                problem.title,
+                problem.content,
+                problem.difficulty,
+                problem.author,
+                problem.createdAt || new Date().toISOString(),
+                problem.views || 0,
+                problem.solved || 0
+            ];
+
+            const result = await this.executeQuery(sql, params);
+
+            if (result.success) {
+                return {
+                    success: true,
+                    id: result.meta.last_row_id,
+                    message: 'Problem added successfully'
+                };
+            } else {
+                throw new Error(result.error);
+            }
+        } catch (error) {
+            console.error('Failed to add problem:', error);
+            return {
+                success: false,
+                error: error.message
+            };
+        }
+    }
+
+    /**
+     * Get problems by user
+     * @param {string} author - Author name
+     * @returns {Promise<Object>} Problems result
+     */
+    async getProblemsByUser(author) {
+        try {
+            const sql = `
+                SELECT * FROM problems
+                WHERE author = ?
+                ORDER BY created_at DESC
+            `;
+
+            const result = await this.executeQuery(sql, [author]);
+
+            if (result.success) {
+                return {
+                    success: true,
+                    problems: result.results
+                };
+            } else {
+                throw new Error(result.error);
+            }
+        } catch (error) {
+            console.error('Failed to get user problems:', error);
+            return {
+                success: false,
+                error: error.message,
+                problems: []
+            };
+        }
+    }
+
+    /**
+     * Delete a problem from the database
+     * @param {number} problemId - Problem ID to delete
+     * @returns {Promise<Object>} Delete result
+     */
+    async deleteProblem(problemId) {
+        try {
+            const sql = `DELETE FROM problems WHERE id = ?`;
+            const result = await this.executeQuery(sql, [problemId]);
+
+            if (result.success) {
+                return {
+                    success: true,
+                    message: 'Problem deleted successfully'
+                };
+            } else {
+                throw new Error(result.error);
+            }
+        } catch (error) {
+            console.error('Failed to delete problem:', error);
+            return {
+                success: false,
+                error: error.message
+            };
+        }
+    }
+
     // Helper methods
     generateId() {
         return 'q_d1_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);

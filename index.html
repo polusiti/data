@@ -831,22 +831,56 @@
             modal.show();
         }
 
-        function createProblem() {
+        async function createProblem() {
             const form = document.getElementById('create-form');
-            const formData = new FormData(form);
-            
+
             // Validate form
             if (!form.checkValidity()) {
                 form.reportValidity();
                 return;
             }
-            
-            // Mock creation
-            alert('問題を投稿しました！\\n\\n実装予定機能:\\n- データベースに保存\\n- リアルタイム更新\\n- 画像添付対応');
-            
-            // Close modal
-            bootstrap.Modal.getInstance(document.getElementById('createModal')).hide();
-            form.reset();
+
+            // Get form data
+            const subject = document.getElementById('subject').value;
+            const title = document.getElementById('title').value;
+            const content = document.getElementById('content').value;
+            const difficulty = parseInt(document.getElementById('difficulty').value);
+
+            // Create problem object
+            const problem = {
+                subject: subject,
+                title: title,
+                content: content,
+                difficulty: difficulty,
+                author: app.authClient.getCurrentUser()?.displayName || 'Unknown',
+                createdAt: new Date().toISOString(),
+                views: 0,
+                solved: 0
+            };
+
+            try {
+                // Save to D1 database
+                const d1Client = window.questaD1 || new QuestaD1Client();
+                const result = await d1Client.addProblem(problem);
+
+                if (result.success) {
+                    // Add to problems list for immediate display
+                    problem.id = result.id;
+                    app.problems.unshift(problem);
+                    app.renderProblems();
+
+                    // Close modal and reset form
+                    bootstrap.Modal.getInstance(document.getElementById('createModal')).hide();
+                    form.reset();
+
+                    alert('問題を投稿しました！');
+                } else {
+                    throw new Error(result.error || 'Database save failed');
+                }
+            } catch (error) {
+                console.error('Failed to create problem:', error);
+                alert('問題の投稿に失敗しました: ' + error.message);
+            }
         }
 
         function viewProblem(id) {
