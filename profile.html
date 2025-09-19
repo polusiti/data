@@ -607,12 +607,26 @@
             }
 
             init() {
-                // Check if user is logged in
-                if (!this.authClient || !this.authClient.isLoggedIn()) {
+                // 強化された認証チェック
+                console.log('Profile init: Checking authentication status');
+                console.log('authClient exists:', !!this.authClient);
+                console.log('sessionToken:', this.authClient?.sessionToken);
+                console.log('currentUser:', this.authClient?.getCurrentUser());
+
+                // より厳密な認証チェック: sessionTokenとユーザーの両方が必要
+                const hasValidSession = this.authClient &&
+                                      this.authClient.sessionToken &&
+                                      this.authClient.getCurrentUser();
+
+                console.log('hasValidSession:', hasValidSession);
+
+                if (!hasValidSession) {
+                    console.log('Profile: No valid session, redirecting to auth page');
                     window.location.href = 'auth.html?return=profile.html';
                     return;
                 }
 
+                console.log('Profile: Valid session found, initializing profile');
                 this.renderProfile();
                 this.setupEventListeners();
                 this.loadRecentActivity();
@@ -870,10 +884,30 @@
             }
         }
 
-        function logout() {
+        async function logout() {
             if (confirm('ログアウトしますか？')) {
-                profileManager.authClient.logout();
-                window.location.href = 'index.html';
+                console.log('Profile logout initiated');
+                try {
+                    // 強制的にローカルデータをクリア
+                    await profileManager.authClient.logout();
+                    localStorage.removeItem('sessionToken');
+                    localStorage.removeItem('currentUser');
+                    localStorage.removeItem('webauthn_challenge');
+                    localStorage.removeItem('webauthn_credential');
+                    sessionStorage.clear();
+
+                    profileManager.authClient.sessionToken = null;
+                    profileManager.authClient.currentUser = null;
+                    console.log('Profile logout completed, redirecting to home');
+
+                    window.location.href = 'index.html';
+                } catch (error) {
+                    console.error('Profile logout error:', error);
+                    // エラーが発生してもホームページに移動
+                    localStorage.clear();
+                    sessionStorage.clear();
+                    window.location.href = 'index.html';
+                }
             }
         }
 
@@ -881,6 +915,18 @@
         let profileManager;
         document.addEventListener('DOMContentLoaded', () => {
             profileManager = new ProfileManager();
+
+            // localStorage変更の監視（他のタブからのログアウトを検知）
+            window.addEventListener('storage', (e) => {
+                if (e.key === 'sessionToken' && !e.newValue) {
+                    console.log('Session token removed in another tab, redirecting to auth');
+                    window.location.href = 'auth.html?return=profile.html';
+                }
+                if (e.key === 'currentUser' && !e.newValue) {
+                    console.log('Current user removed in another tab, redirecting to auth');
+                    window.location.href = 'auth.html?return=profile.html';
+                }
+            });
         });
     </script>
 </body>

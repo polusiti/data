@@ -840,6 +840,13 @@
                     this.authClient.currentUser = null;
                     console.log('Local data cleared');
 
+                    // プロフィールページからのリダイレクト
+                    if (window.location.pathname.includes('profile.html')) {
+                        console.log('Redirecting from profile page to home');
+                        window.location.href = 'index.html';
+                        return;
+                    }
+
                     // UIを即座に更新
                     await this.updateAuthStatus();
                     await this.loadProblems();
@@ -1027,6 +1034,21 @@
         let app;
         document.addEventListener('DOMContentLoaded', () => {
             app = new MobileProblemApp();
+
+            // localStorage変更の監視（他のタブからのログアウトを検知）
+            window.addEventListener('storage', (e) => {
+                if (e.key === 'sessionToken' && !e.newValue) {
+                    console.log('Session token removed in another tab, updating UI');
+                    app.authClient.sessionToken = null;
+                    app.authClient.currentUser = null;
+                    app.updateAuthStatus();
+                }
+                if (e.key === 'currentUser' && !e.newValue) {
+                    console.log('Current user removed in another tab, updating UI');
+                    app.authClient.currentUser = null;
+                    app.updateAuthStatus();
+                }
+            });
         });
     </script>
 </body>
