@@ -561,13 +561,19 @@
                 const user = this.authClient.getCurrentUser();
                 const authStatus = document.getElementById('auth-status');
                 const navAuth = document.getElementById('nav-auth');
-                
+
+                console.log('updateAuthStatus called, user:', user);
+                console.log('sessionToken:', this.authClient.sessionToken);
+                console.log('isLoggedIn:', this.authClient.isLoggedIn());
+
                 if (user) {
+                    console.log('User found, setting logout UI');
                     authStatus.innerHTML = `<i class="fas fa-user"></i> ${user.displayName || user.userId}`;
                     navAuth.innerHTML = '<i class="fas fa-sign-out-alt"></i> ログアウト';
                     navAuth.href = '#';
                     navAuth.onclick = () => this.logout();
                 } else {
+                    console.log('No user found, setting login UI');
                     authStatus.innerHTML = '<i class="fas fa-sign-in-alt"></i> ログインしてください';
                     navAuth.innerHTML = '<i class="fas fa-sign-in-alt"></i> ログイン';
                     navAuth.href = 'auth.html';
@@ -805,10 +811,29 @@
             }
 
             async logout() {
-                await this.authClient.logout();
-                // UIを即座に更新
-                await this.updateAuthStatus();
-                await this.loadProblems();
+                console.log('Logout started...');
+                try {
+                    await this.authClient.logout();
+                    console.log('Auth client logout completed');
+
+                    // 強制的にローカルデータをクリア
+                    localStorage.removeItem('sessionToken');
+                    localStorage.removeItem('currentUser');
+                    this.authClient.sessionToken = null;
+                    this.authClient.currentUser = null;
+                    console.log('Local data cleared');
+
+                    // UIを即座に更新
+                    await this.updateAuthStatus();
+                    await this.loadProblems();
+                    console.log('UI updated');
+                } catch (error) {
+                    console.error('Logout error:', error);
+                    // エラーが発生してもローカルデータをクリア
+                    localStorage.removeItem('sessionToken');
+                    localStorage.removeItem('currentUser');
+                    window.location.reload();
+                }
             }
 
             async demoLogin() {

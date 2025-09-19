@@ -318,23 +318,34 @@ class AuthD1Client {
      * Logout current user
      */
     async logout() {
+        console.log('AuthD1Client logout started');
         try {
             if (this.sessionToken) {
+                console.log('Sending logout request to server');
                 await fetch(`${this.baseUrl}/api/auth/logout`, {
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${this.sessionToken}`
                     }
                 });
+                console.log('Server logout completed');
             }
         } catch (error) {
             console.error('Logout request failed:', error);
         } finally {
+            console.log('Clearing local session data');
             // Clear local session data
             this.sessionToken = null;
             this.currentUser = null;
             localStorage.removeItem('sessionToken');
             localStorage.removeItem('currentUser');
+
+            // Clear any WebAuthn related data
+            localStorage.removeItem('webauthn_challenge');
+            localStorage.removeItem('webauthn_credential');
+            sessionStorage.clear();
+
+            console.log('AuthD1Client logout completed');
         }
     }
 
