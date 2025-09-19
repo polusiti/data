@@ -9,9 +9,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Font Awesome -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <!-- Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    
+
     <style>
         :root {
             --primary-color: #2196F3;
@@ -419,35 +417,16 @@
                                 <i class="fas fa-user"></i>
                             </div>
                             <div class="profile-info ms-3">
-                                <h2 id="profile-name">田中太郎</h2>
-                                <p class="mb-0" id="profile-email">tanaka@example.com</p>
-                                <p class="mb-0"><i class="fas fa-calendar"></i> 参加日: <span id="join-date">2024年1月15日</span></p>
+                                <h2 id="profile-name">ロード中...</h2>
+                                <p class="mb-0"><i class="fas fa-calendar"></i> 参加日: <span id="join-date">ロード中...</span></p>
                             </div>
                         </div>
                         <div class="profile-stats">
                             <div class="row">
-                                <div class="col-3">
+                                <div class="col-12">
                                     <div class="stat-item">
-                                        <span class="stat-number" id="total-problems">42</span>
+                                        <span class="stat-number" id="total-problems">0</span>
                                         <span class="stat-label">投稿問題</span>
-                                    </div>
-                                </div>
-                                <div class="col-3">
-                                    <div class="stat-item">
-                                        <span class="stat-number" id="solved-problems">156</span>
-                                        <span class="stat-label">解答済み</span>
-                                    </div>
-                                </div>
-                                <div class="col-3">
-                                    <div class="stat-item">
-                                        <span class="stat-number" id="total-points">2,340</span>
-                                        <span class="stat-label">獲得ポイント</span>
-                                    </div>
-                                </div>
-                                <div class="col-3">
-                                    <div class="stat-item">
-                                        <span class="stat-number" id="current-rank">15</span>
-                                        <span class="stat-label">現在ランク</span>
                                     </div>
                                 </div>
                             </div>
@@ -465,46 +444,6 @@
         <div class="row">
             <!-- Left Column -->
             <div class="col-lg-8">
-                <!-- Learning Progress -->
-                <div class="profile-card">
-                    <h3 class="card-title">
-                        <i class="fas fa-chart-line"></i> 学習進捗
-                    </h3>
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="progress-item">
-                                <div class="progress-header">
-                                    <span class="progress-label">数学</span>
-                                    <span class="progress-value">78%</span>
-                                </div>
-                                <div class="progress">
-                                    <div class="progress-bar bg-primary" style="width: 78%"></div>
-                                </div>
-                            </div>
-                            <div class="progress-item">
-                                <div class="progress-header">
-                                    <span class="progress-label">英語</span>
-                                    <span class="progress-value">65%</span>
-                                </div>
-                                <div class="progress">
-                                    <div class="progress-bar bg-warning" style="width: 65%"></div>
-                                </div>
-                            </div>
-                            <div class="progress-item">
-                                <div class="progress-header">
-                                    <span class="progress-label">理科</span>
-                                    <span class="progress-value">52%</span>
-                                </div>
-                                <div class="progress">
-                                    <div class="progress-bar bg-info" style="width: 52%"></div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <canvas id="progress-chart" width="300" height="200"></canvas>
-                        </div>
-                    </div>
-                </div>
 
                 <!-- Recent Activity -->
                 <div class="profile-card">
@@ -512,29 +451,9 @@
                         <i class="fas fa-clock"></i> 最近のアクティビティ
                     </h3>
                     <div class="activity-timeline" id="activity-timeline">
-                        <div class="activity-item">
-                            <div class="activity-content">
-                                <div class="activity-time">2時間前</div>
-                                <div class="activity-text">数学の二次方程式問題を解答しました</div>
-                            </div>
-                        </div>
-                        <div class="activity-item">
-                            <div class="activity-content">
-                                <div class="activity-time">5時間前</div>
-                                <div class="activity-text">「光合成のメカニズム」問題を投稿しました</div>
-                            </div>
-                        </div>
-                        <div class="activity-item">
-                            <div class="activity-content">
-                                <div class="activity-time">1日前</div>
-                                <div class="activity-text">英語レベルアップバッジを獲得しました</div>
-                            </div>
-                        </div>
-                        <div class="activity-item">
-                            <div class="activity-content">
-                                <div class="activity-time">2日前</div>
-                                <div class="activity-text">10問連続正解を達成しました</div>
-                            </div>
+                        <div class="text-center text-muted py-4">
+                            <i class="fas fa-clock fa-2x mb-2"></i>
+                            <p>まだアクティビティがありません</p>
                         </div>
                     </div>
                 </div>
@@ -548,37 +467,9 @@
                         </a>
                     </h3>
                     <div id="my-problems">
-                        <div class="problem-item">
-                            <div class="problem-header">
-                                <span class="problem-subject">数学</span>
-                                <div class="problem-difficulty">
-                                    <i class="fas fa-star star"></i>
-                                    <i class="fas fa-star star"></i>
-                                    <i class="fas fa-star star"></i>
-                                    <i class="fas fa-star star empty"></i>
-                                    <i class="fas fa-star star empty"></i>
-                                </div>
-                            </div>
-                            <div class="problem-title">二次方程式の解の公式を使って次の方程式を解きなさい</div>
-                            <div class="problem-meta">
-                                <i class="fas fa-eye"></i> 45回閲覧 | <i class="fas fa-check"></i> 12人解答済み | 2時間前
-                            </div>
-                        </div>
-                        <div class="problem-item">
-                            <div class="problem-header">
-                                <span class="problem-subject">理科</span>
-                                <div class="problem-difficulty">
-                                    <i class="fas fa-star star"></i>
-                                    <i class="fas fa-star star"></i>
-                                    <i class="fas fa-star star"></i>
-                                    <i class="fas fa-star star"></i>
-                                    <i class="fas fa-star star empty"></i>
-                                </div>
-                            </div>
-                            <div class="problem-title">光合成の化学反応式を書いて、反応過程を説明しなさい</div>
-                            <div class="problem-meta">
-                                <i class="fas fa-eye"></i> 23回閲覧 | <i class="fas fa-check"></i> 8人解答済み | 5時間前
-                            </div>
+                        <div class="text-center text-muted py-4">
+                            <i class="fas fa-file-alt fa-2x mb-2"></i>
+                            <p>まだ問題を投稿していません</p>
                         </div>
                     </div>
                 </div>
@@ -586,50 +477,6 @@
 
             <!-- Right Column -->
             <div class="col-lg-4">
-                <!-- Achievements -->
-                <div class="profile-card">
-                    <h3 class="card-title">
-                        <i class="fas fa-trophy"></i> 実績・バッジ
-                    </h3>
-                    <div class="achievement-grid">
-                        <div class="achievement-item earned">
-                            <div class="achievement-icon">
-                                <i class="fas fa-graduation-cap"></i>
-                            </div>
-                            <div class="achievement-name">初回投稿</div>
-                        </div>
-                        <div class="achievement-item earned">
-                            <div class="achievement-icon">
-                                <i class="fas fa-fire"></i>
-                            </div>
-                            <div class="achievement-name">連続解答</div>
-                        </div>
-                        <div class="achievement-item earned">
-                            <div class="achievement-icon">
-                                <i class="fas fa-star"></i>
-                            </div>
-                            <div class="achievement-name">高評価獲得</div>
-                        </div>
-                        <div class="achievement-item">
-                            <div class="achievement-icon">
-                                <i class="fas fa-crown"></i>
-                            </div>
-                            <div class="achievement-name">トップ解答者</div>
-                        </div>
-                        <div class="achievement-item">
-                            <div class="achievement-icon">
-                                <i class="fas fa-medal"></i>
-                            </div>
-                            <div class="achievement-name">100問達成</div>
-                        </div>
-                        <div class="achievement-item">
-                            <div class="achievement-icon">
-                                <i class="fas fa-rocket"></i>
-                            </div>
-                            <div class="achievement-name">スピード解答</div>
-                        </div>
-                    </div>
-                </div>
 
                 <!-- Settings -->
                 <div class="profile-card">
@@ -667,39 +514,6 @@
                         <button class="btn btn-outline-danger btn-sm" onclick="deleteAccount()">
                             <i class="fas fa-trash"></i> アカウント削除
                         </button>
-                    </div>
-                </div>
-
-                <!-- Quick Stats -->
-                <div class="profile-card">
-                    <h3 class="card-title">
-                        <i class="fas fa-chart-bar"></i> 今週の統計
-                    </h3>
-                    <div class="row text-center">
-                        <div class="col-6">
-                            <div class="stat-item">
-                                <span class="stat-number text-success">12</span>
-                                <span class="stat-label">解答した問題</span>
-                            </div>
-                        </div>
-                        <div class="col-6">
-                            <div class="stat-item">
-                                <span class="stat-number text-primary">3</span>
-                                <span class="stat-label">投稿した問題</span>
-                            </div>
-                        </div>
-                        <div class="col-6">
-                            <div class="stat-item">
-                                <span class="stat-number text-warning">156</span>
-                                <span class="stat-label">獲得ポイント</span>
-                            </div>
-                        </div>
-                        <div class="col-6">
-                            <div class="stat-item">
-                                <span class="stat-number text-info">5.2</span>
-                                <span class="stat-label">学習時間(h)</span>
-                            </div>
-                        </div>
                     </div>
                 </div>
             </div>
@@ -801,7 +615,6 @@
 
                 this.renderProfile();
                 this.setupEventListeners();
-                this.initCharts();
                 this.loadRecentActivity();
                 this.loadUserProblems();
             }
@@ -811,41 +624,20 @@
                 const currentUser = this.authClient.getCurrentUser();
                 if (!currentUser) return null;
 
-                // Merge auth data with profile data
+                // Return actual user data only, no fake data
                 return {
                     id: currentUser.id,
                     name: currentUser.displayName || currentUser.userId,
-                    email: currentUser.email || `${currentUser.userId}@example.com`,
-                    joinDate: currentUser.joinDate || '2024-01-15',
+                    joinDate: currentUser.joinDate || new Date().toISOString(),
                     avatar: null,
                     bio: '',
-                    grade: 'high2',
-                    subjects: ['math', 'science'],
-                    stats: currentUser.stats || {
-                        totalProblems: 42,
-                        solvedProblems: 156,
-                        totalPoints: 2340,
-                        currentRank: 15,
-                        weeklyStats: {
-                            solved: 12,
-                            posted: 3,
-                            points: 156,
-                            studyTime: 5.2
-                        }
+                    grade: '',
+                    subjects: [],
+                    stats: {
+                        totalProblems: 0 // Will be updated by loadUserProblems
                     },
-                    progress: {
-                        math: 78,
-                        english: 65,
-                        science: 52
-                    },
-                    achievements: [
-                        { id: 'first_post', name: '初回投稿', earned: true },
-                        { id: 'streak', name: '連続解答', earned: true },
-                        { id: 'high_rating', name: '高評価獲得', earned: true },
-                        { id: 'top_solver', name: 'トップ解答者', earned: false },
-                        { id: 'hundred_problems', name: '100問達成', earned: false },
-                        { id: 'speed_solver', name: 'スピード解答', earned: false }
-                    ],
+                    progress: {},
+                    achievements: [],
                     settings: {
                         notifications: true,
                         publicProfile: true,
@@ -857,28 +649,17 @@
             renderProfile() {
                 // Update profile header
                 document.getElementById('profile-name').textContent = this.userProfile.name;
-                document.getElementById('profile-email').textContent = this.userProfile.email;
                 document.getElementById('join-date').textContent = new Date(this.userProfile.joinDate).toLocaleDateString('ja-JP');
 
-                // Update stats
-                document.getElementById('total-problems').textContent = this.userProfile.stats.totalProblems;
-                document.getElementById('solved-problems').textContent = this.userProfile.stats.solvedProblems;
-                document.getElementById('total-points').textContent = this.userProfile.stats.totalPoints.toLocaleString();
-                document.getElementById('current-rank').textContent = this.userProfile.stats.currentRank;
-
-                // Update weekly stats
-                const weeklyStats = this.userProfile.stats.weeklyStats;
-                document.querySelectorAll('.stat-number').forEach((el, index) => {
-                    const values = [weeklyStats.solved, weeklyStats.posted, weeklyStats.points, weeklyStats.studyTime];
-                    if (index >= 4 && index < 8) {
-                        el.textContent = values[index - 4];
-                    }
-                });
+                // Update stats - only total problems
+                const stats = this.userProfile.stats || {};
+                document.getElementById('total-problems').textContent = stats.totalProblems || 0;
 
                 // Update settings
-                document.getElementById('notifications').checked = this.userProfile.settings.notifications;
-                document.getElementById('public-profile').checked = this.userProfile.settings.publicProfile;
-                document.getElementById('dark-mode').checked = this.userProfile.settings.darkMode;
+                const settings = this.userProfile.settings || {};
+                document.getElementById('notifications').checked = settings.notifications || false;
+                document.getElementById('public-profile').checked = settings.publicProfile || false;
+                document.getElementById('dark-mode').checked = settings.darkMode || false;
             }
 
             setupEventListeners() {
@@ -900,78 +681,18 @@
                 });
             }
 
-            initCharts() {
-                const ctx = document.getElementById('progress-chart').getContext('2d');
-                
-                new Chart(ctx, {
-                    type: 'doughnut',
-                    data: {
-                        labels: ['数学', '英語', '理科'],
-                        datasets: [{
-                            data: [
-                                this.userProfile.progress.math,
-                                this.userProfile.progress.english,
-                                this.userProfile.progress.science
-                            ],
-                            backgroundColor: [
-                                '#2196F3',
-                                '#FF9800',
-                                '#00BCD4'
-                            ],
-                            borderWidth: 2,
-                            borderColor: '#ffffff'
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: {
-                                position: 'bottom',
-                                labels: {
-                                    padding: 20,
-                                    usePointStyle: true
-                                }
-                            }
-                        }
-                    }
-                });
-            }
-
             loadRecentActivity() {
-                // Mock activity data - in real app, this would come from an API
-                const activities = [
-                    {
-                        time: '2時間前',
-                        text: '数学の二次方程式問題を解答しました',
-                        type: 'solve'
-                    },
-                    {
-                        time: '5時間前',
-                        text: '「光合成のメカニズム」問題を投稿しました',
-                        type: 'post'
-                    },
-                    {
-                        time: '1日前',
-                        text: '英語レベルアップバッジを獲得しました',
-                        type: 'achievement'
-                    },
-                    {
-                        time: '2日前',
-                        text: '10問連続正解を達成しました',
-                        type: 'streak'
-                    }
-                ];
-
+                // 実際のユーザーデータに基づいてアクティビティを表示
                 const timeline = document.getElementById('activity-timeline');
-                timeline.innerHTML = activities.map(activity => `
-                    <div class="activity-item">
-                        <div class="activity-content">
-                            <div class="activity-time">${activity.time}</div>
-                            <div class="activity-text">${activity.text}</div>
-                        </div>
+
+                // ユーザーが実際の活動を行うまでは空の状態を表示
+                timeline.innerHTML = `
+                    <div class="text-center text-muted py-4">
+                        <i class="fas fa-clock fa-2x mb-2"></i>
+                        <p>まだアクティビティがありません</p>
+                        <small>問題を投稿したり解答したりするとここに表示されます</small>
                     </div>
-                `).join('');
+                `;
             }
 
             async loadUserProblems() {
