@@ -301,23 +301,8 @@ class AuthD1Client {
             const stored = localStorage.getItem('currentUser');
             if (stored) {
                 this.currentUser = JSON.parse(stored);
-            } else {
-                // Return demo user for testing
-                this.currentUser = {
-                    id: 'demo_user_123',
-                    userId: 'demo_user',
-                    displayName: '田中太郎',
-                    email: 'demo@example.com',
-                    joinDate: '2024-01-15T00:00:00.000Z',
-                    verified: true,
-                    stats: {
-                        totalProblems: 42,
-                        solvedProblems: 156,
-                        totalPoints: 2340,
-                        currentRank: 15
-                    }
-                };
             }
+            // ログアウト後は null を返す（自動デモユーザー生成を削除）
         }
         return this.currentUser;
     }

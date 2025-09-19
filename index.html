@@ -806,7 +806,9 @@
 
             async logout() {
                 await this.authClient.logout();
-                window.location.reload();
+                // UIを即座に更新
+                await this.updateAuthStatus();
+                await this.loadProblems();
             }
 
             async demoLogin() {
