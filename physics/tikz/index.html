@@ -920,121 +920,232 @@
                     this.preview.innerHTML = `<div id="${boardId}" class="tikz-output"></div>`;
 
                     const board = JXG.JSXGraph.initBoard(boardId, {
-                        boundingbox: [-5, 5, 5, -5],
+                        boundingbox: [-2, 6, 12, -2],
                         axis: false,
                         showCopyright: false,
                         showNavigation: false
                     });
 
-                    for (let cmd of commands) {
-                        if (cmd.type === 'circuit_component') {
-                            // 回路コンポーネントの描画
-                            const p1 = board.create('point', cmd.start, {visible: false});
-                            const p2 = board.create('point', cmd.end, {visible: false});
+                    // 座標参照システム - 定義された座標を保存
+                    const coordinateMap = {};
 
-                            // 基本の線を描画
-                            const line = board.create('segment', [p1, p2], {
-                                strokeColor: cmd.color,
+                    // 第1パス: 座標定義を処理
+                    commands.filter(cmd => cmd.type === 'coordinate').forEach(cmd => {
+                        coordinateMap[cmd.name] = cmd.position;
+                        // デバッグ用に座標点を表示（小さな点）
+                        board.create('point', cmd.position, {
+                            size: 2,
+                            color: '#888',
+                            name: cmd.name,
+                            showInfobox: true
+                        });
+                    });
+
+                    this.log(`座標定義: ${Object.keys(coordinateMap).length}個`);
+                    Object.keys(coordinateMap).forEach(name => {
+                        this.log(`- ${name}: [${coordinateMap[name]}]`);
+                    });
+
+                    // 第2パス: 回路コンポーネントを描画
+                    const circuitComponents = commands.filter(cmd => cmd.type === 'circuit_component');
+
+                    circuitComponents.forEach(cmd => {
+                        this.log(`描画中: ${cmd.componentType} "${cmd.label}" from [${cmd.start}] to [${cmd.end}]`);
+
+                        const [x1, y1] = cmd.start;
+                        const [x2, y2] = cmd.end;
+
+                        if (cmd.componentType === 'wire' || cmd.componentType === 'short') {
+                            // 単純な導線
+                            board.create('segment', [
+                                [x1, y1], [x2, y2]
+                            ], {
+                                strokeColor: 'black',
+                                strokeWidth: 2
+                            });
+
+                        } else if (cmd.componentType === 'battery') {
+                            // バッテリーシンボル - より視覚的に正確
+                            const midX = (x1 + x2) / 2;
+                            const midY = (y1 + y2) / 2;
+
+                            // 接続線（両端）
+                            const quarterX1 = x1 + (x2 - x1) * 0.3;
+                            const quarterY1 = y1 + (y2 - y1) * 0.3;
+                            const quarterX2 = x1 + (x2 - x1) * 0.7;
+                            const quarterY2 = y1 + (y2 - y1) * 0.7;
+
+                            board.create('segment', [[x1, y1], [quarterX1, quarterY1]], {
+                                strokeColor: 'black', strokeWidth: 2
+                            });
+                            board.create('segment', [[quarterX2, quarterY2], [x2, y2]], {
+                                strokeColor: 'black', strokeWidth: 2
+                            });
+
+                            // バッテリーシンボル（長い線と短い線）
+                            const dx = x2 - x1;
+                            const dy = y2 - y1;
+                            const length = Math.sqrt(dx*dx + dy*dy);
+                            const perpX = -dy / length * 0.4;
+                            const perpY = dx / length * 0.4;
+
+                            // 正極（長い線）
+                            board.create('segment', [
+                                [quarterX1 + perpX, quarterY1 + perpY],
+                                [quarterX1 - perpX, quarterY1 - perpY]
+                            ], {
+                                strokeColor: 'red',
+                                strokeWidth: 4
+                            });
+
+                            // 負極（短い線）
+                            board.create('segment', [
+                                [quarterX2 + perpX*0.6, quarterY2 + perpY*0.6],
+                                [quarterX2 - perpX*0.6, quarterY2 - perpY*0.6]
+                            ], {
+                                strokeColor: 'black',
+                                strokeWidth: 4
+                            });
+
+                            // ラベル
+                            if (cmd.label) {
+                                board.create('text', [midX - perpY*0.8, midY + perpX*0.8, cmd.label], {
+                                    fontSize: 14,
+                                    color: 'blue'
+                                });
+                            }
+
+                        } else if (cmd.componentType === 'capacitor') {
+                            // コンデンサーシンボル - 平行板
+                            const midX = (x1 + x2) / 2;
+                            const midY = (y1 + y2) / 2;
+
+                            // 接続線
+                            const plate1X = x1 + (x2 - x1) * 0.4;
+                            const plate1Y = y1 + (y2 - y1) * 0.4;
+                            const plate2X = x1 + (x2 - x1) * 0.6;
+                            const plate2Y = y1 + (y2 - y1) * 0.6;
+
+                            board.create('segment', [[x1, y1], [plate1X, plate1Y]], {
+                                strokeColor: 'black', strokeWidth: 2
+                            });
+                            board.create('segment', [[plate2X, plate2Y], [x2, y2]], {
+                                strokeColor: 'black', strokeWidth: 2
+                            });
+
+                            // 平行板
+                            const dx = x2 - x1;
+                            const dy = y2 - y1;
+                            const length = Math.sqrt(dx*dx + dy*dy);
+                            const perpX = -dy / length * 0.3;
+                            const perpY = dx / length * 0.3;
+
+                            // 第1板
+                            board.create('segment', [
+                                [plate1X + perpX, plate1Y + perpY],
+                                [plate1X - perpX, plate1Y - perpY]
+                            ], {
+                                strokeColor: 'blue',
+                                strokeWidth: 4
+                            });
+
+                            // 第2板
+                            board.create('segment', [
+                                [plate2X + perpX, plate2Y + perpY],
+                                [plate2X - perpX, plate2Y - perpY]
+                            ], {
+                                strokeColor: 'blue',
+                                strokeWidth: 4
+                            });
+
+                            // ラベル
+                            if (cmd.label) {
+                                board.create('text', [midX - perpY*0.6, midY + perpX*0.6, cmd.label], {
+                                    fontSize: 14,
+                                    color: 'blue'
+                                });
+                            }
+
+                        } else if (cmd.componentType === 'switch') {
+                            // スイッチシンボル
+                            const midX = (x1 + x2) / 2;
+                            const midY = (y1 + y2) / 2;
+
+                            // 接続線
+                            const switch1X = x1 + (x2 - x1) * 0.3;
+                            const switch1Y = y1 + (y2 - y1) * 0.3;
+                            const switch2X = x1 + (x2 - x1) * 0.7;
+                            const switch2Y = y1 + (y2 - y1) * 0.7;
+
+                            board.create('segment', [[x1, y1], [switch1X, switch1Y]], {
+                                strokeColor: 'black', strokeWidth: 2
+                            });
+                            board.create('segment', [[switch2X, switch2Y], [x2, y2]], {
+                                strokeColor: 'black', strokeWidth: 2
+                            });
+
+                            // スイッチ（開いた状態）
+                            const dx = x2 - x1;
+                            const dy = y2 - y1;
+                            const length = Math.sqrt(dx*dx + dy*dy);
+                            const unitX = dx / length;
+                            const unitY = dy / length;
+
+                            board.create('segment', [
+                                [switch1X, switch1Y],
+                                [switch1X + unitX * 0.5, switch1Y + unitY * 0.5 + 0.2]
+                            ], {
+                                strokeColor: 'green',
                                 strokeWidth: 3
                             });
 
-                            // コンポーネント固有の装飾
-                            const midX = (cmd.start[0] + cmd.end[0]) / 2;
-                            const midY = (cmd.start[1] + cmd.end[1]) / 2;
+                            // 接点
+                            board.create('point', [switch1X, switch1Y], {
+                                size: 3, color: 'green', fixed: true
+                            });
+                            board.create('point', [switch2X, switch2Y], {
+                                size: 3, color: 'green', fixed: true
+                            });
 
-                            if (cmd.componentType === 'battery') {
-                                // バッテリーシンボル（簡略版）
-                                const perpX = -(cmd.end[1] - cmd.start[1]) * 0.2;
-                                const perpY = (cmd.end[0] - cmd.start[0]) * 0.2;
-
-                                board.create('segment', [
-                                    [midX - perpX/2, midY - perpY/2],
-                                    [midX + perpX/2, midY + perpY/2]
-                                ], {
-                                    strokeColor: cmd.color,
-                                    strokeWidth: 4
-                                });
-
-                                board.create('segment', [
-                                    [midX + perpX/4 - perpX/2, midY + perpY/4 - perpY/2],
-                                    [midX - perpX/4 + perpX/2, midY - perpY/4 + perpY/2]
-                                ], {
-                                    strokeColor: cmd.color,
-                                    strokeWidth: 2
-                                });
-                            } else if (cmd.componentType === 'capacitor') {
-                                // コンデンサーシンボル（平行線）
-                                const perpX = -(cmd.end[1] - cmd.start[1]) * 0.15;
-                                const perpY = (cmd.end[0] - cmd.start[0]) * 0.15;
-
-                                board.create('segment', [
-                                    [midX - 0.1 - perpX, midY - 0.1 - perpY],
-                                    [midX - 0.1 + perpX, midY - 0.1 + perpY]
-                                ], {
-                                    strokeColor: cmd.color,
-                                    strokeWidth: 3
-                                });
-
-                                board.create('segment', [
-                                    [midX + 0.1 - perpX, midY + 0.1 - perpY],
-                                    [midX + 0.1 + perpX, midY + 0.1 + perpY]
-                                ], {
-                                    strokeColor: cmd.color,
-                                    strokeWidth: 3
-                                });
-                            } else if (cmd.componentType === 'switch') {
-                                // スイッチシンボル（ギャップ付き線）
-                                const gapSize = 0.15;
-                                const dirX = (cmd.end[0] - cmd.start[0]);
-                                const dirY = (cmd.end[1] - cmd.start[1]);
-                                const length = Math.sqrt(dirX * dirX + dirY * dirY);
-                                const unitX = dirX / length;
-                                const unitY = dirY / length;
-
-                                board.create('segment', [
-                                    [midX - gapSize * unitX, midY - gapSize * unitY],
-                                    [midX + gapSize * unitX * 1.5, midY + gapSize * unitY * 1.5 + 0.2]
-                                ], {
-                                    strokeColor: cmd.color,
-                                    strokeWidth: 3
-                                });
-                            }
-
-                            // ラベルを追加
+                            // ラベル
                             if (cmd.label) {
-                                board.create('text', [midX, midY - 0.3, cmd.label], {
-                                    fontSize: 12,
-                                    color: cmd.color
+                                board.create('text', [midX, midY + 0.3, cmd.label], {
+                                    fontSize: 14,
+                                    color: 'green'
                                 });
                             }
-                        } else if (cmd.type === 'coordinate') {
-                            // 座標点（非表示、参照用）
-                            board.create('point', cmd.position, {
-                                visible: false,
-                                name: cmd.name
+                        }
+                    });
+
+                    // 第3パス: 通常の線分（接続線）
+                    commands.filter(cmd => cmd.type === 'line').forEach(cmd => {
+                        const points = cmd.points.map(p => board.create('point', p, {visible: false}));
+                        for (let i = 0; i < points.length - 1; i++) {
+                            board.create('segment', [points[i], points[i + 1]], {
+                                strokeColor: cmd.color,
+                                strokeWidth: cmd.thick ? 3 : 2,
+                                dash: cmd.dashed ? 2 : 0
                             });
-                        } else if (cmd.type === 'text') {
-                            // テキストラベル
-                            board.create('text', [cmd.position[0], cmd.position[1], cmd.text], {
-                                fontSize: 14,
-                                color: cmd.color,
-                                anchorX: 'middle',
-                                anchorY: 'middle'
-                            });
-                        } else if (cmd.type === 'arrow') {
+                        }
+                    });
+
+                    // 第4パス: テキストラベル
+                    commands.filter(cmd => cmd.type === 'text').forEach(cmd => {
+                        board.create('text', [cmd.position[0], cmd.position[1], cmd.text], {
+                            fontSize: 16,
+                            color: cmd.color,
+                            anchorX: 'middle',
+                            anchorY: 'middle'
+                        });
+                    });
+
+                    // 第5パス: その他の図形要素
+                    commands.forEach(cmd => {
+                        if (cmd.type === 'arrow') {
                             board.create('arrow', [cmd.start, cmd.end], {
                                 strokeColor: cmd.color,
                                 strokeWidth: cmd.thick ? 3 : 2
                             });
-                        } else if (cmd.type === 'line') {
-                            const points = cmd.points.map(p => board.create('point', p, {visible: false}));
-                            for (let i = 0; i < points.length - 1; i++) {
-                                board.create('segment', [points[i], points[i + 1]], {
-                                    strokeColor: cmd.color,
-                                    strokeWidth: cmd.thick ? 3 : 2,
-                                    dash: cmd.dashed ? 2 : 0
-                                });
-                            }
                         } else if (cmd.type === 'circle') {
                             board.create('circle', [cmd.center, cmd.radius], {
                                 strokeColor: cmd.color,
@@ -1070,9 +1181,11 @@
                                 strokeWidth: 3
                             });
                         }
-                    }
+                    });
 
                     this.log(`物理図レンダリング完了: ${commands.length} 要素`, 'success');
+                    this.log(`- 座標定義: ${Object.keys(coordinateMap).length}個`);
+                    this.log(`- 回路部品: ${circuitComponents.length}個`);
                     this.status.textContent = '✅ 物理図レンダリング完了';
 
                 } catch (error) {
