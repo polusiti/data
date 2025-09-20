@@ -301,13 +301,26 @@
                 <ul class="navbar-nav me-auto">
                     <li class="nav-item">
                         <a class="nav-link active" href="browse.html">
-                            <i class="fas fa-search"></i> 問題ブラウザ
+                            <i class="fas fa-list"></i> 問題一覧
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="create.html">
-                            <i class="fas fa-plus"></i> 問題作成
+                        <a class="nav-link" href="search.html">
+                            <i class="fas fa-search"></i> 検索
                         </a>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-book"></i> 教科別作成
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="math/"><i class="fas fa-calculator"></i> 数学</a></li>
+                            <li><a class="dropdown-item" href="physics/"><i class="fas fa-atom"></i> 物理</a></li>
+                            <li><a class="dropdown-item" href="chemistry/"><i class="fas fa-flask"></i> 化学</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="physics/tikz/"><i class="fas fa-drafting-compass"></i> 物理図作成</a></li>
+                            <li><a class="dropdown-item" href="math/geo/"><i class="fas fa-shapes"></i> 数学図形</a></li>
+                        </ul>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="statistics.html">
@@ -316,6 +329,11 @@
                     </li>
                 </ul>
                 <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link" href="auth.html" id="nav-auth-browse">
+                            <i class="fas fa-sign-in-alt"></i> ログイン
+                        </a>
+                    </li>
                     <li class="nav-item">
                         <a class="nav-link" href="index.html">
                             <i class="fas fa-home"></i> ホーム
@@ -345,8 +363,13 @@
                 </a>
             </li>
             <li class="nav-item">
-                <a class="nav-link" data-subject="english" href="#" onclick="switchSubject('english')">
-                    <i class="fas fa-language"></i> 英語
+                <a class="nav-link" data-subject="physics" href="#" onclick="switchSubject('physics')">
+                    <i class="fas fa-atom"></i> 物理
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" data-subject="chemistry" href="#" onclick="switchSubject('chemistry')">
+                    <i class="fas fa-flask"></i> 化学
                 </a>
             </li>
         </ul>
@@ -573,18 +596,12 @@
             })));
             
             // English module problems
-            const vocabQuestions = JSON.parse(localStorage.getItem('vocabQuestions') || '[]');
-            const grammarQuestions = JSON.parse(localStorage.getItem('grammarQuestions') || '[]');
-            const readingQuestions = JSON.parse(localStorage.getItem('readingQuestions') || '[]');
-            const listeningQuestions = JSON.parse(localStorage.getItem('listeningQuestions') || '[]');
-            const summaryQuestions = JSON.parse(localStorage.getItem('summaryQuestions') || '[]');
-            
+            const physicsBQuestions = JSON.parse(localStorage.getItem('physicsQuestions') || '[]');
+            const chemistryQuestions = JSON.parse(localStorage.getItem('chemistryQuestions') || '[]');
+
             allProblems = allProblems.concat([
-                ...vocabQuestions.map(p => ({...p, subject: 'english', category: '語彙', source: 'vocab'})),
-                ...grammarQuestions.map(p => ({...p, subject: 'english', category: '文法', source: 'grammar'})),
-                ...readingQuestions.map(p => ({...p, subject: 'english', category: '読解', source: 'reading'})),
-                ...listeningQuestions.map(p => ({...p, subject: 'english', category: 'リスニング', source: 'listening'})),
-                ...summaryQuestions.map(p => ({...p, subject: 'english', category: 'ライティング', source: 'summary'}))
+                ...physicsBQuestions.map(p => ({...p, subject: 'physics', category: '物理', source: 'physics'})),
+                ...chemistryQuestions.map(p => ({...p, subject: 'chemistry', category: '化学', source: 'chemistry'}))
             ]);
             
             // Created problems
@@ -631,18 +648,34 @@
                     },
                     {
                         id: '3',
-                        title: 'English Grammar Exercise',
-                        subject: 'english',
-                        category: '文法',
-                        difficulty: 2,
-                        author: 'EnglishTeacher',
-                        content: 'Choose the correct form: She ___ to school every day.',
+                        title: '斜方投射における最高点の高さ',
+                        subject: 'physics',
+                        category: '力学',
+                        difficulty: 4,
+                        author: 'PhysicsTeacher',
+                        content: '質量m = 2kgの物体を初速度v₀ = 20m/s、仰角θ = 30°で投射する。最高点における高さを求めよ。',
                         answerType: 'auto',
-                        likes: 3,
-                        answers: 15,
-                        tags: ['present tense', 'verb forms'],
+                        likes: 2,
+                        answers: 8,
+                        tags: ['力学', '斜方投射', '運動方程式'],
                         createdAt: new Date('2025-09-12T14:20:00'),
-                        estimatedTime: 5,
+                        estimatedTime: 15,
+                        source: 'sample'
+                    },
+                    {
+                        id: '4',
+                        title: '化学反応の平衡定数',
+                        subject: 'chemistry',
+                        category: '物理化学',
+                        difficulty: 3,
+                        author: 'ChemistryLab',
+                        content: 'N₂ + 3H₂ ⇌ 2NH₃の反応において、平衡時の各物質の濃度から平衡定数を求めよ。',
+                        answerType: 'manual',
+                        likes: 1,
+                        answers: 5,
+                        tags: ['化学平衡', '平衡定数', 'アンモニア合成'],
+                        createdAt: new Date('2025-09-11T16:45:00'),
+                        estimatedTime: 20,
                         source: 'sample'
                     }
                 ];
@@ -686,12 +719,21 @@
                     <option value="中学数学">中学数学</option>
                     <option value="競技数学">競技数学</option>
                 `;
-            } else if (currentSubject === 'english') {
+            } else if (currentSubject === 'physics') {
                 categoryFilter.innerHTML += `
-                    <option value="文法">文法</option>
-                    <option value="語彙">語彙</option>
-                    <option value="読解">読解</option>
-                    <option value="リスニング">リスニング</option>
+                    <option value="力学">力学</option>
+                    <option value="電磁気学">電磁気学</option>
+                    <option value="熱力学">熱力学</option>
+                    <option value="波動">波動</option>
+                    <option value="現代物理">現代物理</option>
+                `;
+            } else if (currentSubject === 'chemistry') {
+                categoryFilter.innerHTML += `
+                    <option value="無機化学">無機化学</option>
+                    <option value="有機化学">有機化学</option>
+                    <option value="物理化学">物理化学</option>
+                    <option value="分析化学">分析化学</option>
+                    <option value="生化学">生化学</option>
                 `;
             }
         }
@@ -1681,20 +1723,31 @@
                 ],
                 "3": [
                     {
-                        "id": "comment_1640995600000_mno345",
-                        "author": "英語学習者",
-                        "content": "Simple but effective grammar question! The use of 'every day' makes it clear that we need present tense.",
+                        "id": "comment_1640995500000_jkl012",
+                        "author": "物理学習者",
+                        "content": "斜方投射の問題は運動の分解がポイントですね。y方向の運動方程式を使って最高点での条件v_y = 0を利用します。",
                         "createdAt": "2025-09-12T15:00:00.000Z",
-                        "likes": 1,
+                        "likes": 3,
                         "replies": []
-                    },
+                    }
+                ],
+                "4": [
                     {
-                        "id": "comment_1640995700000_pqr678",
-                        "author": "Teacher Alice",
-                        "content": "This is a great example for teaching present simple. I might use this in my next lesson!",
-                        "createdAt": "2025-09-12T16:30:00.000Z",
+                        "id": "comment_1640995600000_mno345",
+                        "author": "化学研究生",
+                        "content": "ハーバー・ボッシュ法の反応ですね！高温高圧の条件下での平衡定数の計算は工業化学でも重要です。",
+                        "createdAt": "2025-09-11T17:30:00.000Z",
                         "likes": 2,
-                        "replies": []
+                        "replies": [
+                            {
+                                "id": "reply_1640995700000_pqr678",
+                                "author": "ChemistryLab",
+                                "content": "その通りです！ルシャトリエの原理も一緒に考えてみると面白いですよ。",
+                                "createdAt": "2025-09-11T18:15:00.000Z",
+                                "likes": 1,
+                                "replies": []
+                            }
+                        ]
                     }
                 ]
             };
