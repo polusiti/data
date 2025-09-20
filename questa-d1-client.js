@@ -113,15 +113,60 @@ class QuestaD1Client {
                 throw new Error('Failed to create stats table: ' + result2.error);
             }
 
-            // Create index for faster queries
-            const createIndex = `
-                CREATE INDEX IF NOT EXISTS idx_questions_subject 
-                ON questions(subject, created_at DESC)
+            // Create comments table
+            const createCommentsTable = `
+                CREATE TABLE IF NOT EXISTS comments (
+                    id TEXT PRIMARY KEY,
+                    problem_id TEXT NOT NULL,
+                    user_id TEXT NOT NULL,
+                    author_name TEXT NOT NULL,
+                    author_inquiry_number TEXT,
+                    content TEXT NOT NULL,
+                    media_urls TEXT, -- JSON string for media attachments
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    likes INTEGER DEFAULT 0,
+                    parent_id TEXT NULL, -- For reply comments
+                    is_reported BOOLEAN DEFAULT FALSE,
+                    is_deleted BOOLEAN DEFAULT FALSE
+                )
             `;
 
-            const result3 = await this.executeQuery(createIndex);
+            const result3 = await this.executeQuery(createCommentsTable);
             if (!result3.success) {
-                console.warn('Failed to create index:', result3.error);
+                throw new Error('Failed to create comments table: ' + result3.error);
+            }
+
+            // Create comment likes table
+            const createCommentLikesTable = `
+                CREATE TABLE IF NOT EXISTS comment_likes (
+                    id TEXT PRIMARY KEY,
+                    comment_id TEXT NOT NULL,
+                    user_id TEXT NOT NULL,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    UNIQUE(comment_id, user_id),
+                    FOREIGN KEY (comment_id) REFERENCES comments(id)
+                )
+            `;
+
+            const result4 = await this.executeQuery(createCommentLikesTable);
+            if (!result4.success) {
+                throw new Error('Failed to create comment_likes table: ' + result4.error);
+            }
+
+            // Create indexes for faster queries
+            const createIndexes = [
+                `CREATE INDEX IF NOT EXISTS idx_questions_subject ON questions(subject, created_at DESC)`,
+                `CREATE INDEX IF NOT EXISTS idx_comments_problem ON comments(problem_id, created_at DESC)`,
+                `CREATE INDEX IF NOT EXISTS idx_comments_parent ON comments(parent_id, created_at ASC)`,
+                `CREATE INDEX IF NOT EXISTS idx_comment_likes_comment ON comment_likes(comment_id)`
+            ];
+
+            for (const indexSql of createIndexes) {
+                const indexResult = await this.executeQuery(indexSql);
+                if (!indexResult.success) {
+                    console.warn('Failed to create index:', indexResult.error);
+                }
             }
 
             this.initialized = true;
@@ -908,6 +953,327 @@ class QuestaD1Client {
                 error: error.message
             };
         }
+    }
+
+    /**
+     * Save comment to D1
+     * @param {Object} comment - Comment data
+     * @returns {Promise<Object>} Save result
+     */
+    async saveComment(comment) {
+        try {
+            await this.initializeDatabase();
+
+            const commentData = {
+                id: comment.id || this.generateCommentId(),
+                problem_id: comment.problemId || comment.problem_id,
+                user_id: comment.userId || comment.user_id,
+                author_name: comment.authorName || comment.author_name || comment.author,
+                author_inquiry_number: comment.authorInquiryNumber || comment.author_inquiry_number,
+                content: comment.content,
+                media_urls: comment.mediaUrls ? JSON.stringify(comment.mediaUrls) : null,
+                parent_id: comment.parentId || comment.parent_id || null
+            };
+
+            const sql = `
+                INSERT INTO comments (
+                    id, problem_id, user_id, author_name, author_inquiry_number,
+                    content, media_urls, parent_id, created_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+            `;
+
+            const params = [
+                commentData.id,
+                commentData.problem_id,
+                commentData.user_id,
+                commentData.author_name,
+                commentData.author_inquiry_number,
+                commentData.content,
+                commentData.media_urls,
+                commentData.parent_id
+            ];
+
+            const result = await this.executeQuery(sql, params);
+
+            if (result.success) {
+                return {
+                    success: true,
+                    comment: { ...commentData, created_at: new Date().toISOString() }
+                };
+            } else {
+                throw new Error(result.error);
+            }
+        } catch (error) {
+            console.error('D1 Save Comment Error:', error);
+            return {
+                success: false,
+                error: error.message
+            };
+        }
+    }
+
+    /**
+     * Get comments by problem ID
+     * @param {string} problemId - Problem ID
+     * @param {number} limit - Limit results
+     * @param {number} offset - Offset for pagination
+     * @returns {Promise<Object>} Comments list
+     */
+    async getCommentsByProblem(problemId, limit = 50, offset = 0) {
+        try {
+            await this.initializeDatabase();
+
+            const sql = `
+                SELECT c.*,
+                       (SELECT COUNT(*) FROM comment_likes cl WHERE cl.comment_id = c.id) as likes
+                FROM comments c
+                WHERE c.problem_id = ? AND c.parent_id IS NULL AND c.is_deleted = FALSE
+                ORDER BY c.created_at DESC
+                LIMIT ? OFFSET ?
+            `;
+
+            const result = await this.executeQuery(sql, [problemId, limit, offset]);
+
+            if (result.success) {
+                const comments = result.results.map(comment => this.formatComment(comment));
+
+                // Get replies for each comment
+                for (const comment of comments) {
+                    const replies = await this.getCommentReplies(comment.id);
+                    comment.replies = replies.success ? replies.comments : [];
+                }
+
+                return {
+                    success: true,
+                    comments: comments,
+                    total: result.results.length,
+                    hasMore: result.results.length === limit
+                };
+            } else {
+                throw new Error(result.error);
+            }
+        } catch (error) {
+            console.error('D1 Get Comments Error:', error);
+            return {
+                success: false,
+                error: error.message,
+                comments: []
+            };
+        }
+    }
+
+    /**
+     * Get replies to a comment
+     * @param {string} commentId - Parent comment ID
+     * @returns {Promise<Object>} Replies list
+     */
+    async getCommentReplies(commentId) {
+        try {
+            const sql = `
+                SELECT c.*,
+                       (SELECT COUNT(*) FROM comment_likes cl WHERE cl.comment_id = c.id) as likes
+                FROM comments c
+                WHERE c.parent_id = ? AND c.is_deleted = FALSE
+                ORDER BY c.created_at ASC
+            `;
+
+            const result = await this.executeQuery(sql, [commentId]);
+
+            if (result.success) {
+                return {
+                    success: true,
+                    comments: result.results.map(comment => this.formatComment(comment))
+                };
+            } else {
+                throw new Error(result.error);
+            }
+        } catch (error) {
+            console.error('D1 Get Replies Error:', error);
+            return {
+                success: false,
+                error: error.message,
+                comments: []
+            };
+        }
+    }
+
+    /**
+     * Like/unlike a comment
+     * @param {string} commentId - Comment ID
+     * @param {string} userId - User ID
+     * @returns {Promise<Object>} Like result
+     */
+    async toggleCommentLike(commentId, userId) {
+        try {
+            await this.initializeDatabase();
+
+            // Check if already liked
+            const checkSql = `SELECT id FROM comment_likes WHERE comment_id = ? AND user_id = ?`;
+            const checkResult = await this.executeQuery(checkSql, [commentId, userId]);
+
+            if (checkResult.success && checkResult.results.length > 0) {
+                // Unlike
+                const deleteSql = `DELETE FROM comment_likes WHERE comment_id = ? AND user_id = ?`;
+                const deleteResult = await this.executeQuery(deleteSql, [commentId, userId]);
+
+                if (deleteResult.success) {
+                    return { success: true, action: 'unliked' };
+                }
+            } else {
+                // Like
+                const likeId = this.generateId();
+                const insertSql = `INSERT INTO comment_likes (id, comment_id, user_id) VALUES (?, ?, ?)`;
+                const insertResult = await this.executeQuery(insertSql, [likeId, commentId, userId]);
+
+                if (insertResult.success) {
+                    return { success: true, action: 'liked' };
+                }
+            }
+
+            throw new Error('Failed to toggle like');
+        } catch (error) {
+            console.error('D1 Toggle Like Error:', error);
+            return {
+                success: false,
+                error: error.message
+            };
+        }
+    }
+
+    /**
+     * Delete a comment (soft delete)
+     * @param {string} commentId - Comment ID
+     * @param {string} userId - User ID (for permission check)
+     * @returns {Promise<Object>} Delete result
+     */
+    async deleteComment(commentId, userId) {
+        try {
+            const sql = `
+                UPDATE comments
+                SET is_deleted = TRUE, updated_at = CURRENT_TIMESTAMP
+                WHERE id = ? AND user_id = ?
+            `;
+
+            const result = await this.executeQuery(sql, [commentId, userId]);
+
+            if (result.success) {
+                return { success: true, message: 'Comment deleted successfully' };
+            } else {
+                throw new Error(result.error);
+            }
+        } catch (error) {
+            console.error('D1 Delete Comment Error:', error);
+            return {
+                success: false,
+                error: error.message
+            };
+        }
+    }
+
+    /**
+     * Report a comment
+     * @param {string} commentId - Comment ID
+     * @param {string} userId - Reporter user ID
+     * @param {string} reason - Report reason
+     * @returns {Promise<Object>} Report result
+     */
+    async reportComment(commentId, userId, reason = '') {
+        try {
+            // Mark comment as reported
+            const sql = `UPDATE comments SET is_reported = TRUE WHERE id = ?`;
+            const result = await this.executeQuery(sql, [commentId]);
+
+            // Here you could also create a reports table for detailed tracking
+
+            if (result.success) {
+                return { success: true, message: 'Comment reported successfully' };
+            } else {
+                throw new Error(result.error);
+            }
+        } catch (error) {
+            console.error('D1 Report Comment Error:', error);
+            return {
+                success: false,
+                error: error.message
+            };
+        }
+    }
+
+    /**
+     * Get comment statistics for a problem
+     * @param {string} problemId - Problem ID
+     * @returns {Promise<Object>} Comment statistics
+     */
+    async getCommentStats(problemId) {
+        try {
+            const sql = `
+                SELECT
+                    COUNT(*) as total_comments,
+                    COUNT(CASE WHEN parent_id IS NULL THEN 1 END) as top_level_comments,
+                    COUNT(CASE WHEN parent_id IS NOT NULL THEN 1 END) as replies,
+                    AVG((SELECT COUNT(*) FROM comment_likes cl WHERE cl.comment_id = c.id)) as avg_likes
+                FROM comments c
+                WHERE c.problem_id = ? AND c.is_deleted = FALSE
+            `;
+
+            const result = await this.executeQuery(sql, [problemId]);
+
+            if (result.success && result.results.length > 0) {
+                return {
+                    success: true,
+                    stats: {
+                        totalComments: result.results[0].total_comments || 0,
+                        topLevelComments: result.results[0].top_level_comments || 0,
+                        replies: result.results[0].replies || 0,
+                        avgLikes: Math.round((result.results[0].avg_likes || 0) * 10) / 10
+                    }
+                };
+            } else {
+                return {
+                    success: true,
+                    stats: {
+                        totalComments: 0,
+                        topLevelComments: 0,
+                        replies: 0,
+                        avgLikes: 0
+                    }
+                };
+            }
+        } catch (error) {
+            console.error('D1 Comment Stats Error:', error);
+            return {
+                success: false,
+                error: error.message
+            };
+        }
+    }
+
+    /**
+     * Format comment object
+     */
+    formatComment(comment) {
+        const formatted = { ...comment };
+
+        // Parse JSON fields safely
+        try {
+            if (formatted.media_urls && typeof formatted.media_urls === 'string') {
+                formatted.media_urls = JSON.parse(formatted.media_urls);
+            }
+        } catch (e) {
+            formatted.media_urls = [];
+        }
+
+        // Ensure likes is a number
+        formatted.likes = parseInt(formatted.likes) || 0;
+
+        return formatted;
+    }
+
+    /**
+     * Generate comment ID
+     */
+    generateCommentId() {
+        return 'comment_d1_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
     }
 
     // Helper methods
