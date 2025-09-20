@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>問題ブラウザ - Data Manager</title>
+    <title>検索・問題一覧 - Data Manager</title>
     
     <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -301,12 +301,7 @@
                 <ul class="navbar-nav me-auto">
                     <li class="nav-item">
                         <a class="nav-link active" href="browse.html">
-                            <i class="fas fa-list"></i> 問題一覧
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="search.html">
-                            <i class="fas fa-search"></i> 検索
+                            <i class="fas fa-search"></i> 検索・問題一覧
                         </a>
                     </li>
                     <li class="nav-item dropdown">
@@ -349,7 +344,7 @@
         <div class="row mb-4">
             <div class="col">
                 <h1 class="h3 text-primary">
-                    <i class="fas fa-search"></i> 問題ブラウザ
+                    <i class="fas fa-search"></i> 検索・問題一覧
                 </h1>
                 <p class="text-muted">登録されている問題を検索・閲覧できます</p>
             </div>
@@ -405,11 +400,51 @@
                         <option value="oldest">古い順</option>
                         <option value="difficulty">難易度順</option>
                         <option value="likes">いいね順</option>
+                        <option value="relevance">関連度順</option>
                     </select>
                 </div>
                 <div class="col-md-3">
                     <label for="searchInput" class="form-label">検索</label>
-                    <input type="text" class="form-control" id="searchInput" placeholder="タイトルで検索..." oninput="applyFilters()">
+                    <div class="input-group">
+                        <input type="text" class="form-control" id="searchInput" placeholder="キーワード検索..." oninput="applyFilters()">
+                        <button class="btn btn-outline-secondary" type="button" onclick="toggleAdvancedSearch()">
+                            <i class="fas fa-cog"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Advanced Search Options -->
+            <div class="row mt-3" id="advancedSearch" style="display: none;">
+                <div class="col-md-4">
+                    <label for="tagSearch" class="form-label">タグ検索</label>
+                    <input type="text" class="form-control" id="tagSearch" placeholder="タグで検索..." oninput="applyFilters()">
+                </div>
+                <div class="col-md-4">
+                    <label for="authorSearch" class="form-label">作成者検索</label>
+                    <input type="text" class="form-control" id="authorSearch" placeholder="作成者名..." oninput="applyFilters()">
+                </div>
+                <div class="col-md-4">
+                    <label for="timeFilter" class="form-label">推定解答時間</label>
+                    <select class="form-select" id="timeFilter" onchange="applyFilters()">
+                        <option value="">全て</option>
+                        <option value="5">5分以内</option>
+                        <option value="10">10分以内</option>
+                        <option value="20">20分以内</option>
+                        <option value="30">30分以内</option>
+                        <option value="60">1時間以内</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="row mt-2">
+                <div class="col-12">
+                    <button class="btn btn-outline-secondary btn-sm" onclick="clearAllFilters()">
+                        <i class="fas fa-times"></i> フィルターをクリア
+                    </button>
+                    <button class="btn btn-outline-primary btn-sm ms-2" onclick="saveSearch()">
+                        <i class="fas fa-bookmark"></i> 検索条件を保存
+                    </button>
                 </div>
             </div>
         </div>
@@ -745,13 +780,28 @@
             const difficulty = document.getElementById('difficultyFilter').value;
             const sort = document.getElementById('sortFilter').value;
             const search = document.getElementById('searchInput').value.toLowerCase();
+            const tagSearch = document.getElementById('tagSearch')?.value.toLowerCase() || '';
+            const authorSearch = document.getElementById('authorSearch')?.value.toLowerCase() || '';
+            const timeFilter = document.getElementById('timeFilter')?.value || '';
 
             // Filter problems
             let filteredProblems = sampleProblems.filter(problem => {
                 if (problem.subject !== currentSubject) return false;
                 if (category && problem.category !== category) return false;
                 if (difficulty && problem.difficulty !== parseInt(difficulty)) return false;
-                if (search && !problem.title.toLowerCase().includes(search)) return false;
+                if (timeFilter && problem.estimatedTime > parseInt(timeFilter)) return false;
+
+                // Text search in title and content
+                if (search && !problem.title.toLowerCase().includes(search) &&
+                    !(problem.content || '').toLowerCase().includes(search)) return false;
+
+                // Tag search
+                if (tagSearch && !(problem.tags || []).some(tag =>
+                    tag.toLowerCase().includes(tagSearch))) return false;
+
+                // Author search
+                if (authorSearch && !(problem.author || '').toLowerCase().includes(authorSearch)) return false;
+
                 return true;
             });
 
@@ -766,6 +816,10 @@
                         return b.difficulty - a.difficulty;
                     case 'likes':
                         return b.likes - a.likes;
+                    case 'relevance':
+                        if (!search && !tagSearch && !authorSearch) return 0;
+                        return calculateRelevanceScore(b, search, tagSearch, authorSearch) -
+                               calculateRelevanceScore(a, search, tagSearch, authorSearch);
                     default:
                         return 0;
                 }
@@ -776,6 +830,66 @@
             renderProblems();
             updateResultsCount();
             renderPagination();
+        }
+
+        function calculateRelevanceScore(problem, search, tagSearch, authorSearch) {
+            let score = 0;
+            const title = (problem.title || '').toLowerCase();
+            const content = (problem.content || '').toLowerCase();
+            const tags = (problem.tags || []).join(' ').toLowerCase();
+            const author = (problem.author || '').toLowerCase();
+
+            // Title matches get highest score
+            if (search && title.includes(search)) score += 10;
+            if (search && content.includes(search)) score += 5;
+
+            // Tag matches
+            if (tagSearch && tags.includes(tagSearch)) score += 8;
+
+            // Author matches
+            if (authorSearch && author.includes(authorSearch)) score += 6;
+
+            return score;
+        }
+
+        function toggleAdvancedSearch() {
+            const advancedSearch = document.getElementById('advancedSearch');
+            const isVisible = advancedSearch.style.display !== 'none';
+            advancedSearch.style.display = isVisible ? 'none' : 'block';
+        }
+
+        function clearAllFilters() {
+            document.getElementById('categoryFilter').value = '';
+            document.getElementById('difficultyFilter').value = '';
+            document.getElementById('sortFilter').value = 'newest';
+            document.getElementById('searchInput').value = '';
+            if (document.getElementById('tagSearch')) document.getElementById('tagSearch').value = '';
+            if (document.getElementById('authorSearch')) document.getElementById('authorSearch').value = '';
+            if (document.getElementById('timeFilter')) document.getElementById('timeFilter').value = '';
+            applyFilters();
+        }
+
+        function saveSearch() {
+            const searchConditions = {
+                subject: currentSubject,
+                category: document.getElementById('categoryFilter').value,
+                difficulty: document.getElementById('difficultyFilter').value,
+                sort: document.getElementById('sortFilter').value,
+                search: document.getElementById('searchInput').value,
+                tagSearch: document.getElementById('tagSearch')?.value || '',
+                authorSearch: document.getElementById('authorSearch')?.value || '',
+                timeFilter: document.getElementById('timeFilter')?.value || '',
+                timestamp: new Date().toISOString()
+            };
+
+            const savedSearches = JSON.parse(localStorage.getItem('savedSearches') || '[]');
+            savedSearches.unshift(searchConditions);
+
+            // Keep only last 10 searches
+            if (savedSearches.length > 10) savedSearches.pop();
+
+            localStorage.setItem('savedSearches', JSON.stringify(savedSearches));
+            showNotification('検索条件を保存しました', 'success');
         }
 
         function toggleView(view) {

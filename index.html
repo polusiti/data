@@ -337,9 +337,22 @@
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
                     <li class="nav-item">
-                        <a class="nav-link" href="search.html" id="nav-search">
-                            <i class="fas fa-search"></i> 検索
+                        <a class="nav-link" href="browse.html" id="nav-browse">
+                            <i class="fas fa-search"></i> 検索・問題一覧
                         </a>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-book"></i> 教科別作成
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="math/"><i class="fas fa-calculator"></i> 数学</a></li>
+                            <li><a class="dropdown-item" href="physics/"><i class="fas fa-atom"></i> 物理</a></li>
+                            <li><a class="dropdown-item" href="chemistry/"><i class="fas fa-flask"></i> 化学</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="physics/tikz/"><i class="fas fa-drafting-compass"></i> 物理図作成</a></li>
+                            <li><a class="dropdown-item" href="math/geo/"><i class="fas fa-shapes"></i> 数学図形</a></li>
+                        </ul>
                     </li>
                     <li class="nav-item" id="nav-profile-item" style="display: none;">
                         <a class="nav-link" href="profile.html" id="nav-profile">
@@ -366,7 +379,7 @@
                 <div class="row align-items-center">
                     <div class="col-md-8">
                         <h1><i class="fas fa-graduation-cap"></i> 学習問題を共有しよう</h1>
-                        <p>数学、英語、理科の問題を作成・共有・解答できるプラットフォーム</p>
+                        <p>数学、物理、化学の問題を作成・共有・解答できるプラットフォーム。KaTeX対応で美しい数式表示、コメント機能付き。</p>
                         <div class="auth-status" id="auth-status">
                             ログインしてください
                         </div>
@@ -1024,8 +1037,8 @@
         }
 
         function showSearch() {
-            // Navigate to search page with proper integration
-            window.location.href = 'search.html';
+            // Navigate to integrated search and browse page
+            window.location.href = 'browse.html';
         }
 
         function showProfile() {

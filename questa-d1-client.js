@@ -1148,6 +1148,35 @@ class QuestaD1Client {
      */
     async deleteComment(commentId, userId) {
         try {
+            await this.initializeDatabase();
+
+            console.log('D1 deleteComment called with:', { commentId, userId });
+
+            // First check if the comment exists and user has permission
+            const checkSql = `
+                SELECT id, user_id, author_name
+                FROM comments
+                WHERE id = ? AND is_deleted = FALSE
+            `;
+            const checkResult = await this.executeQuery(checkSql, [commentId]);
+
+            if (!checkResult.success) {
+                throw new Error('Failed to check comment: ' + checkResult.error);
+            }
+
+            if (checkResult.results.length === 0) {
+                throw new Error('Comment not found or already deleted');
+            }
+
+            const comment = checkResult.results[0];
+            console.log('Found comment:', comment);
+
+            // Check permission
+            if (comment.user_id !== userId) {
+                throw new Error('Permission denied: You can only delete your own comments');
+            }
+
+            // Perform soft delete
             const sql = `
                 UPDATE comments
                 SET is_deleted = TRUE, updated_at = CURRENT_TIMESTAMP
@@ -1155,11 +1184,12 @@ class QuestaD1Client {
             `;
 
             const result = await this.executeQuery(sql, [commentId, userId]);
+            console.log('D1 delete query result:', result);
 
             if (result.success) {
                 return { success: true, message: 'Comment deleted successfully' };
             } else {
-                throw new Error(result.error);
+                throw new Error(result.error || 'Delete query failed');
             }
         } catch (error) {
             console.error('D1 Delete Comment Error:', error);
