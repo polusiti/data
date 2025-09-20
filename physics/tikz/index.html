@@ -697,11 +697,37 @@
                 const commands = [];
                 const lines = tikzCode.split('\n');
 
+                // 座標定義を最初に処理
+                const coordinateMap = {};
+
                 for (let line of lines) {
                     line = line.trim();
-                    if (line.startsWith('\\draw') || line.startsWith('\\foreach') ||
-                        line.startsWith('\\coordinate') || line.startsWith('\\node')) {
-                        const cmd = this.parsePhysicsDrawCommand(line);
+                    if (line.startsWith('\\coordinate')) {
+                        const match = line.match(/\\coordinate\s*\(([^)]+)\)\s*at\s*\(([^)]+)\)/);
+                        if (match) {
+                            const name = match[1];
+                            const coords = match[2].split(',').map(s => parseFloat(s.trim()));
+                            if (coords.length >= 2) {
+                                coordinateMap[name] = coords;
+                                commands.push({
+                                    type: 'coordinate',
+                                    name: name,
+                                    position: coords,
+                                    color: 'transparent'
+                                });
+                            }
+                        }
+                    }
+                }
+
+                // 描画コマンドを処理（座標参照を解決）
+                for (let line of lines) {
+                    line = line.trim();
+                    if (line.startsWith('\\draw')) {
+                        const cmd = this.parsePhysicsDrawCommand(line, coordinateMap);
+                        if (cmd) commands.push(cmd);
+                    } else if (line.startsWith('\\node')) {
+                        const cmd = this.parsePhysicsDrawCommand(line, coordinateMap);
                         if (cmd) commands.push(cmd);
                     }
                 }
@@ -709,10 +735,10 @@
                 return commands;
             }
 
-            parsePhysicsDrawCommand(line) {
+            parsePhysicsDrawCommand(line, coordinateMap = {}) {
                 // circuitikz コマンド（電気回路専用）
                 if (line.includes('to[') && (line.includes('battery') || line.includes('C=') || line.includes('S=') || line.includes('short'))) {
-                    const coords = this.extractCoordinates(line);
+                    const coords = this.extractAdvancedCoordinates(line, coordinateMap);
                     if (coords.length >= 2) {
                         let componentType = 'wire';
                         let label = '';
@@ -792,7 +818,7 @@
 
                 // 物理ベクトル（矢印）
                 if (line.includes('->') && !line.includes('domain') && !line.includes('to[')) {
-                    const coords = this.extractCoordinates(line);
+                    const coords = this.extractAdvancedCoordinates(line, coordinateMap);
                     if (coords.length >= 2) {
                         const color = this.extractColor(line) || 'blue';
                         return {
@@ -844,7 +870,7 @@
 
                 // 通常の線分
                 if (line.includes('--')) {
-                    const coords = this.extractCoordinates(line);
+                    const coords = this.extractAdvancedCoordinates(line, coordinateMap);
                     if (coords.length >= 2) {
                         return {
                             type: 'line',
@@ -882,30 +908,67 @@
                 return 'linear';
             }
 
-            extractCoordinates(line) {
+            extractAdvancedCoordinates(line, coordinateMap = {}) {
                 const coords = [];
+                let currentPosition = [0, 0];
 
-                // 通常の座標 (x,y) の抽出
-                const normalMatches = line.match(/\(([^)]+)\)/g);
-                if (normalMatches) {
-                    for (let match of normalMatches) {
-                        const coord = match.replace(/[()]/g, '').split(',');
-                        if (coord.length >= 2) {
-                            const x = parseFloat(coord[0].trim());
-                            const y = parseFloat(coord[1].trim());
-                            if (!isNaN(x) && !isNaN(y)) {
-                                coords.push([x, y]);
-                            }
-                        }
-                    }
+                // 座標パターンを順次解析（相対座標、絶対座標、名前付き座標）
+                const coordPatterns = [
+                    /\(([^)]+)\)/g,          // 通常の座標 (x,y)
+                    /\+\+\(([^)]+)\)/g,     // 相対座標 ++(x,y)
+                    /coordinate\s*\(([^)]+)\)/g  // coordinate 命令内
+                ];
+
+                // 複数のマッチパターンを統合して処理
+                const allMatches = [];
+
+                // (x,y) 形式の座標を抽出
+                let match;
+                const coordRegex = /\(([^)]+)\)/g;
+                while ((match = coordRegex.exec(line)) !== null) {
+                    allMatches.push({
+                        type: 'absolute',
+                        content: match[1],
+                        fullMatch: match[0]
+                    });
                 }
 
-                // coordinate定義の抽出
-                const coordinateMatches = line.match(/coordinate\s*\(([^)]+)\)/g);
-                if (coordinateMatches) {
-                    for (let match of coordinateMatches) {
-                        // これは名前付き座標なので、位置は別途処理
-                        // ここでは座標値は抽出しない
+                // ++(x,y) 形式の相対座標を抽出
+                const relativeRegex = /\+\+\(([^)]+)\)/g;
+                while ((match = relativeRegex.exec(line)) !== null) {
+                    allMatches.push({
+                        type: 'relative',
+                        content: match[1],
+                        fullMatch: match[0]
+                    });
+                }
+
+                for (let coordMatch of allMatches) {
+                    if (coordMatch.type === 'absolute') {
+                        // 名前付き座標の確認
+                        const coordStr = coordMatch.content.trim();
+                        if (coordinateMap[coordStr]) {
+                            coords.push(coordinateMap[coordStr]);
+                            currentPosition = coordinateMap[coordStr];
+                        } else {
+                            // 数値座標の解析
+                            const coordParts = coordStr.split(',').map(s => parseFloat(s.trim()));
+                            if (coordParts.length >= 2 && !isNaN(coordParts[0]) && !isNaN(coordParts[1])) {
+                                coords.push(coordParts);
+                                currentPosition = coordParts;
+                            }
+                        }
+                    } else if (coordMatch.type === 'relative') {
+                        // 相対座標の計算
+                        const coordParts = coordMatch.content.split(',').map(s => parseFloat(s.trim()));
+                        if (coordParts.length >= 2 && !isNaN(coordParts[0]) && !isNaN(coordParts[1])) {
+                            const newPos = [
+                                currentPosition[0] + coordParts[0],
+                                currentPosition[1] + coordParts[1]
+                            ];
+                            coords.push(newPos);
+                            currentPosition = newPos;
+                        }
                     }
                 }
 
