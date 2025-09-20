@@ -142,7 +142,7 @@
             border-bottom: 2px solid var(--border-color);
             padding: 10px;
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(45px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
             gap: 4px;
             max-height: 180px;
             overflow-y: auto;
@@ -404,7 +404,7 @@
             }
 
             .latex-toolbar {
-                grid-template-columns: repeat(auto-fit, minmax(55px, 1fr));
+                grid-template-columns: repeat(auto-fit, minmax(85px, 1fr));
                 gap: 8px;
                 padding: 15px;
                 max-height: 200px;
@@ -666,11 +666,11 @@
             <div class="input-pane">
                 <!-- モード選択 -->
                 <div class="mode-selector">
-                    <button class="mode-btn active" data-mode="generic">一般</button>
-                    <button class="mode-btn" data-mode="fraction">分数</button>
-                    <button class="mode-btn" data-mode="equation">方程式</button>
-                    <button class="mode-btn" data-mode="geometry">図形</button>
-                    <button class="mode-btn" data-mode="calculus">微積分</button>
+                    <button class="mode-btn active" data-mode="algebra">代数</button>
+                    <button class="mode-btn" data-mode="analysis">解析</button>
+                    <button class="mode-btn" data-mode="geometry">幾何</button>
+                    <button class="mode-btn" data-mode="probability">確率</button>
+                    <button class="mode-btn" data-mode="statistics">統計</button>
                 </div>
 
                 <!-- LaTeX ツールバー -->
