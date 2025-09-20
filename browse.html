@@ -503,6 +503,26 @@
                                     <textarea class="form-control" id="commentContent" placeholder="この問題についてのコメント、質問、解法のヒントなどをお書きください..." maxlength="1000"></textarea>
                                     <div class="form-text">最大1000文字</div>
                                 </div>
+
+                                <!-- Media Attachment -->
+                                <div class="mb-3">
+                                    <label for="commentMedia" class="form-label">
+                                        <i class="fas fa-paperclip"></i> ファイル添付（任意）
+                                    </label>
+                                    <input type="file" class="form-control" id="commentMedia" multiple accept="image/*,audio/*" onchange="previewCommentMedia()">
+                                    <div class="form-text">画像・音声ファイルを添付できます（最大50MB）</div>
+
+                                    <!-- Media Preview -->
+                                    <div id="commentMediaPreview" class="mt-2" style="display: none;">
+                                        <div class="d-flex flex-wrap gap-2" id="mediaPreviewContainer">
+                                            <!-- Previews will be shown here -->
+                                        </div>
+                                        <button type="button" class="btn btn-outline-secondary btn-sm mt-2" onclick="clearCommentMedia()">
+                                            <i class="fas fa-times"></i> 添付ファイルをクリア
+                                        </button>
+                                    </div>
+                                </div>
+
                                 <button type="button" class="btn btn-primary" onclick="submitComment()">
                                     <i class="fas fa-paper-plane"></i>
                                     コメントを投稿
@@ -1021,61 +1041,129 @@
             }
         }
 
-        function loadComments(problemId) {
+        // Enhanced D1-integrated comment system
+        async function loadComments(problemId) {
+            try {
+                // Try to load from D1 first
+                const d1Result = await window.questaD1.getCommentsByProblem(problemId);
+
+                if (d1Result.success) {
+                    displayComments(d1Result.comments);
+                    updateCommentCount(d1Result.comments.length);
+                    console.log('✅ Comments loaded from D1:', d1Result.comments.length);
+                } else {
+                    console.warn('⚠️ D1 load failed, falling back to localStorage:', d1Result.error);
+                    loadCommentsFromLocalStorage(problemId);
+                }
+            } catch (error) {
+                console.error('❌ Comment loading error:', error);
+                loadCommentsFromLocalStorage(problemId);
+            }
+        }
+
+        function loadCommentsFromLocalStorage(problemId) {
             const comments = problemComments[problemId] || [];
-            
-            // Update comment count
-            document.getElementById('modalCommentCount').textContent = comments.length;
-            document.getElementById('commentsBadge').textContent = comments.length;
-            
+            displayComments(comments);
+            updateCommentCount(comments.length);
+        }
+
+        function displayComments(comments) {
             const commentsList = document.getElementById('commentsList');
             const emptyComments = document.getElementById('emptyComments');
-            
+
             if (comments.length === 0) {
                 commentsList.style.display = 'none';
                 emptyComments.style.display = 'block';
                 return;
             }
-            
+
             commentsList.style.display = 'block';
             emptyComments.style.display = 'none';
-            
-            // Render comments
-            commentsList.innerHTML = comments.map(comment => renderComment(comment)).join('');
+
+            // Render comments with enhanced UI
+            commentsList.innerHTML = comments.map(comment => renderEnhancedComment(comment)).join('');
         }
 
-        function renderComment(comment) {
-            const date = new Date(comment.createdAt).toLocaleString();
+        function updateCommentCount(count) {
+            document.getElementById('modalCommentCount').textContent = count;
+            document.getElementById('commentsBadge').textContent = count;
+        }
+
+        function renderEnhancedComment(comment) {
+            const date = new Date(comment.created_at).toLocaleString();
+            const mediaHtml = renderCommentMedia(comment.media_urls || []);
+
             return `
                 <div class="comment-item" data-comment-id="${comment.id}">
                     <div class="comment-header">
-                        <span class="comment-author">${comment.author}</span>
-                        <span class="comment-date">${date}</span>
+                        <span class="comment-author">
+                            <i class="fas fa-user-circle"></i> ${comment.author_name || comment.author}
+                            ${comment.author_inquiry_number ? `<small class="text-muted">(${comment.author_inquiry_number})</small>` : ''}
+                        </span>
+                        <span class="comment-date">
+                            <i class="fas fa-clock"></i> ${date}
+                        </span>
                     </div>
-                    <div class="comment-content">${comment.content}</div>
+                    <div class="comment-content">${escapeHtml(comment.content)}</div>
+                    ${mediaHtml}
                     <div class="comment-actions">
-                        <span class="comment-action" onclick="likeComment('${comment.id}')">
+                        <span class="comment-action" onclick="toggleCommentLike('${comment.id}')">
                             <i class="fas fa-thumbs-up"></i> いいね (${comment.likes || 0})
                         </span>
                         <span class="comment-action" onclick="replyToComment('${comment.id}')">
                             <i class="fas fa-reply"></i> 返信
                         </span>
+                        ${canDeleteComment(comment) ? `
+                            <span class="comment-action text-danger" onclick="deleteComment('${comment.id}')">
+                                <i class="fas fa-trash"></i> 削除
+                            </span>
+                        ` : ''}
                         <span class="comment-action" onclick="reportComment('${comment.id}')">
                             <i class="fas fa-flag"></i> 報告
                         </span>
                     </div>
-                    ${comment.replies ? comment.replies.map(reply => `
+                    ${comment.replies && comment.replies.length > 0 ? comment.replies.map(reply => `
                         <div class="comment-reply">
-                            ${renderComment(reply)}
+                            ${renderEnhancedComment(reply)}
                         </div>
                     `).join('') : ''}
+                    <div id="reply-form-${comment.id}" class="reply-form" style="display: none;">
+                        <div class="mt-2">
+                            <textarea class="form-control form-control-sm" placeholder="返信を書く..." maxlength="500"></textarea>
+                            <div class="mt-2">
+                                <button class="btn btn-primary btn-sm" onclick="submitReply('${comment.id}')">
+                                    <i class="fas fa-paper-plane"></i> 返信
+                                </button>
+                                <button class="btn btn-secondary btn-sm" onclick="cancelReply('${comment.id}')">
+                                    キャンセル
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             `;
         }
 
-        function submitComment() {
+        function renderCommentMedia(mediaUrls) {
+            if (!mediaUrls || mediaUrls.length === 0) return '';
+
+            return `
+                <div class="comment-media mt-2">
+                    ${mediaUrls.map(media => {
+                        if (media.type.startsWith('image/')) {
+                            return `<img src="${media.url}" alt="${media.name}" class="img-thumbnail me-2 mb-2" style="max-width: 200px; max-height: 150px;">`;
+                        } else if (media.type.startsWith('audio/')) {
+                            return `<audio controls class="d-block mb-2"><source src="${media.url}" type="${media.type}"></audio>`;
+                        }
+                        return '';
+                    }).join('')}
+                </div>
+            `;
+        }
+
+        async function submitComment() {
             if (!currentProblem) return;
-            
+
             // Check authentication
             if (!window.authClient || !window.authClient.isLoggedIn()) {
                 alert('コメントを投稿するにはログインが必要です');
@@ -1085,60 +1173,386 @@
             const user = window.authClient.getCurrentUser();
             const contentInput = document.getElementById('commentContent');
             const content = contentInput.value.trim();
-            
+
             if (!content) {
                 alert('コメント内容を入力してください');
                 return;
             }
-            
+
             if (content.length > 1000) {
                 alert('コメントは1000文字以内で入力してください');
                 return;
             }
-            
+
+            // Handle media files
+            const mediaFiles = document.getElementById('commentMedia')?.files || [];
+            let mediaUrls = [];
+
+            if (mediaFiles.length > 0) {
+                try {
+                    showNotification('メディアファイルをアップロード中...', 'info');
+
+                    for (const file of mediaFiles) {
+                        const uploadResult = await window.questaR2.uploadMedia(
+                            file,
+                            window.questaR2.generateStoragePath('comments', file.type.startsWith('image/') ? 'image' : 'audio', file.name),
+                            {
+                                subject: 'comments',
+                                category: 'attachments',
+                                problemId: currentProblem.id
+                            }
+                        );
+
+                        if (uploadResult.success) {
+                            mediaUrls.push({
+                                url: uploadResult.url,
+                                type: uploadResult.type,
+                                name: file.name,
+                                size: uploadResult.size
+                            });
+                        } else {
+                            console.warn('Media upload failed:', uploadResult.error);
+                        }
+                    }
+                } catch (uploadError) {
+                    console.error('Media upload error:', uploadError);
+                    showNotification('メディアファイルのアップロードに失敗しました', 'error');
+                }
+            }
+
             // Create comment object with authenticated user info
             const comment = {
-                id: 'comment_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6),
-                author: user.displayName,
-                authorId: user.id,
+                problemId: currentProblem.id,
+                userId: user.id,
+                authorName: user.displayName,
                 authorInquiryNumber: user.inquiryNumber,
                 content: content,
-                createdAt: new Date().toISOString(),
-                likes: 0,
-                replies: []
+                mediaUrls: mediaUrls.length > 0 ? mediaUrls : null
             };
-            
-            // Add to comments storage
-            if (!problemComments[currentProblem.id]) {
-                problemComments[currentProblem.id] = [];
+
+            try {
+                // Save to D1 first
+                const d1Result = await window.questaD1.saveComment(comment);
+
+                if (d1Result.success) {
+                    console.log('✅ Comment saved to D1:', d1Result.comment);
+
+                    // Clear form
+                    contentInput.value = '';
+                    if (document.getElementById('commentMedia')) {
+                        document.getElementById('commentMedia').value = '';
+                    }
+
+                    // Reload comments
+                    await loadComments(currentProblem.id);
+
+                    showNotification('コメントを投稿しました！', 'success');
+                } else {
+                    throw new Error(d1Result.error);
+                }
+            } catch (error) {
+                console.error('❌ D1 save failed, falling back to localStorage:', error);
+
+                // Fallback to localStorage
+                const fallbackComment = {
+                    id: 'comment_local_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6),
+                    author: user.displayName,
+                    authorId: user.id,
+                    authorInquiryNumber: user.inquiryNumber,
+                    content: content,
+                    createdAt: new Date().toISOString(),
+                    likes: 0,
+                    replies: [],
+                    mediaUrls: mediaUrls
+                };
+
+                if (!problemComments[currentProblem.id]) {
+                    problemComments[currentProblem.id] = [];
+                }
+                problemComments[currentProblem.id].unshift(fallbackComment);
+                localStorage.setItem('problemComments', JSON.stringify(problemComments));
+
+                contentInput.value = '';
+                loadComments(currentProblem.id);
+                showNotification('コメントを投稿しました（ローカル保存）', 'warning');
             }
-            problemComments[currentProblem.id].unshift(comment);
-            
-            // Save to localStorage
-            localStorage.setItem('problemComments', JSON.stringify(problemComments));
-            
-            // Update problem's comment count
-            currentProblem.comments = (currentProblem.comments || 0) + 1;
-            
-            // Clear form
-            contentInput.value = '';
-            
-            // Reload comments
-            loadComments(currentProblem.id);
-            
-            // Show success message
-            showNotification('コメントを投稿しました！', 'success');
         }
 
+        async function toggleCommentLike(commentId) {
+            if (!window.authClient || !window.authClient.isLoggedIn()) {
+                alert('いいねするにはログインが必要です');
+                return;
+            }
+
+            const user = window.authClient.getCurrentUser();
+
+            try {
+                const result = await window.questaD1.toggleCommentLike(commentId, user.id);
+
+                if (result.success) {
+                    await loadComments(currentProblem.id);
+                    const action = result.action === 'liked' ? 'いいねしました！' : 'いいねを取り消しました';
+                    showNotification(action, 'success');
+                } else {
+                    throw new Error(result.error);
+                }
+            } catch (error) {
+                console.error('Like toggle error:', error);
+                // Fallback to localStorage
+                const comments = problemComments[currentProblem.id] || [];
+                const comment = findCommentById(comments, commentId);
+
+                if (comment) {
+                    comment.likes = (comment.likes || 0) + 1;
+                    localStorage.setItem('problemComments', JSON.stringify(problemComments));
+                    loadComments(currentProblem.id);
+                    showNotification('いいねしました（ローカル保存）', 'warning');
+                }
+            }
+        }
+
+        async function deleteComment(commentId) {
+            if (!window.authClient || !window.authClient.isLoggedIn()) {
+                alert('削除権限がありません');
+                return;
+            }
+
+            if (!confirm('このコメントを削除しますか？')) {
+                return;
+            }
+
+            const user = window.authClient.getCurrentUser();
+
+            try {
+                const result = await window.questaD1.deleteComment(commentId, user.id);
+
+                if (result.success) {
+                    await loadComments(currentProblem.id);
+                    showNotification('コメントを削除しました', 'success');
+                } else {
+                    throw new Error(result.error);
+                }
+            } catch (error) {
+                console.error('Delete comment error:', error);
+                showNotification('コメント削除に失敗しました', 'error');
+            }
+        }
+
+        async function reportComment(commentId) {
+            if (!window.authClient || !window.authClient.isLoggedIn()) {
+                alert('報告するにはログインが必要です');
+                return;
+            }
+
+            const reason = prompt('報告理由を入力してください（任意）:');
+            if (reason === null) return; // Cancelled
+
+            const user = window.authClient.getCurrentUser();
+
+            try {
+                const result = await window.questaD1.reportComment(commentId, user.id, reason);
+
+                if (result.success) {
+                    showNotification('コメントを報告しました。確認いたします。', 'success');
+                } else {
+                    throw new Error(result.error);
+                }
+            } catch (error) {
+                console.error('Report comment error:', error);
+                showNotification('報告の送信に失敗しました', 'error');
+            }
+        }
+
+        function replyToComment(commentId) {
+            // Hide all other reply forms
+            document.querySelectorAll('.reply-form').forEach(form => {
+                form.style.display = 'none';
+            });
+
+            // Show this reply form
+            const replyForm = document.getElementById(`reply-form-${commentId}`);
+            if (replyForm) {
+                replyForm.style.display = 'block';
+                replyForm.querySelector('textarea').focus();
+            }
+        }
+
+        function cancelReply(commentId) {
+            const replyForm = document.getElementById(`reply-form-${commentId}`);
+            if (replyForm) {
+                replyForm.style.display = 'none';
+                replyForm.querySelector('textarea').value = '';
+            }
+        }
+
+        async function submitReply(parentCommentId) {
+            if (!window.authClient || !window.authClient.isLoggedIn()) {
+                alert('返信するにはログインが必要です');
+                return;
+            }
+
+            const replyForm = document.getElementById(`reply-form-${parentCommentId}`);
+            const textarea = replyForm.querySelector('textarea');
+            const content = textarea.value.trim();
+
+            if (!content) {
+                alert('返信内容を入力してください');
+                return;
+            }
+
+            const user = window.authClient.getCurrentUser();
+
+            const replyComment = {
+                problemId: currentProblem.id,
+                userId: user.id,
+                authorName: user.displayName,
+                authorInquiryNumber: user.inquiryNumber,
+                content: content,
+                parentId: parentCommentId
+            };
+
+            try {
+                const result = await window.questaD1.saveComment(replyComment);
+
+                if (result.success) {
+                    textarea.value = '';
+                    replyForm.style.display = 'none';
+                    await loadComments(currentProblem.id);
+                    showNotification('返信を投稿しました！', 'success');
+                } else {
+                    throw new Error(result.error);
+                }
+            } catch (error) {
+                console.error('Reply submit error:', error);
+                showNotification('返信の投稿に失敗しました', 'error');
+            }
+        }
+
+        // Helper functions
+        function canDeleteComment(comment) {
+            if (!window.authClient || !window.authClient.isLoggedIn()) {
+                return false;
+            }
+
+            const user = window.authClient.getCurrentUser();
+            return comment.user_id === user.id || comment.authorId === user.id;
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Media preview functions
+        function previewCommentMedia() {
+            const fileInput = document.getElementById('commentMedia');
+            const previewArea = document.getElementById('commentMediaPreview');
+            const previewContainer = document.getElementById('mediaPreviewContainer');
+
+            if (!fileInput.files || fileInput.files.length === 0) {
+                previewArea.style.display = 'none';
+                return;
+            }
+
+            // Validate files
+            const maxSize = 50 * 1024 * 1024; // 50MB
+            const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'audio/mpeg', 'audio/wav', 'audio/ogg', 'audio/mp4'];
+
+            for (const file of fileInput.files) {
+                if (file.size > maxSize) {
+                    alert(`ファイル「${file.name}」のサイズが大きすぎます（最大50MB）`);
+                    fileInput.value = '';
+                    previewArea.style.display = 'none';
+                    return;
+                }
+
+                if (!allowedTypes.includes(file.type)) {
+                    alert(`ファイル「${file.name}」は対応していない形式です`);
+                    fileInput.value = '';
+                    previewArea.style.display = 'none';
+                    return;
+                }
+            }
+
+            // Create previews
+            previewContainer.innerHTML = '';
+            Array.from(fileInput.files).forEach((file, index) => {
+                const previewDiv = document.createElement('div');
+                previewDiv.className = 'position-relative';
+
+                if (file.type.startsWith('image/')) {
+                    const img = document.createElement('img');
+                    img.src = URL.createObjectURL(file);
+                    img.className = 'img-thumbnail';
+                    img.style.cssText = 'width: 100px; height: 100px; object-fit: cover;';
+                    img.onload = () => URL.revokeObjectURL(img.src);
+                    previewDiv.appendChild(img);
+                } else if (file.type.startsWith('audio/')) {
+                    const audioDiv = document.createElement('div');
+                    audioDiv.className = 'bg-light border rounded d-flex align-items-center justify-content-center';
+                    audioDiv.style.cssText = 'width: 100px; height: 100px;';
+                    audioDiv.innerHTML = `
+                        <div class="text-center">
+                            <i class="fas fa-music fa-2x text-primary"></i>
+                            <div class="small mt-1">${file.name.split('.').pop().toUpperCase()}</div>
+                        </div>
+                    `;
+                    previewDiv.appendChild(audioDiv);
+                }
+
+                // Add file name and remove button
+                const infoDiv = document.createElement('div');
+                infoDiv.className = 'small text-truncate mt-1';
+                infoDiv.style.maxWidth = '100px';
+                infoDiv.textContent = file.name;
+
+                const removeBtn = document.createElement('button');
+                removeBtn.className = 'btn btn-danger btn-sm position-absolute top-0 end-0';
+                removeBtn.style.cssText = 'padding: 2px 6px; font-size: 0.7rem;';
+                removeBtn.innerHTML = '<i class="fas fa-times"></i>';
+                removeBtn.onclick = () => removeMediaFile(index);
+
+                previewDiv.appendChild(removeBtn);
+                previewDiv.appendChild(infoDiv);
+                previewContainer.appendChild(previewDiv);
+            });
+
+            previewArea.style.display = 'block';
+        }
+
+        function removeMediaFile(indexToRemove) {
+            const fileInput = document.getElementById('commentMedia');
+            const dt = new DataTransfer();
+
+            Array.from(fileInput.files).forEach((file, index) => {
+                if (index !== indexToRemove) {
+                    dt.items.add(file);
+                }
+            });
+
+            fileInput.files = dt.files;
+            previewCommentMedia();
+        }
+
+        function clearCommentMedia() {
+            const fileInput = document.getElementById('commentMedia');
+            const previewArea = document.getElementById('commentMediaPreview');
+
+            fileInput.value = '';
+            previewArea.style.display = 'none';
+        }
+
+        // Toggle problem like function
         function toggleProblemLike() {
             if (!currentProblem) return;
-            
+
             const likeBtn = document.getElementById('modalLikeBtn');
             const likeCount = document.getElementById('modalLikeCount');
-            
+
             // Toggle like status
             currentProblem.liked = !currentProblem.liked;
-            
+
             if (currentProblem.liked) {
                 currentProblem.likes = (currentProblem.likes || 0) + 1;
                 likeBtn.classList.add('liked');
@@ -1147,25 +1561,11 @@
                 currentProblem.likes = Math.max(0, (currentProblem.likes || 0) - 1);
                 likeBtn.classList.remove('liked');
             }
-            
+
             likeCount.textContent = currentProblem.likes;
-            
+
             // Update the problem in the list view as well
             renderProblems();
-        }
-
-        function likeComment(commentId) {
-            if (!currentProblem) return;
-            
-            const comments = problemComments[currentProblem.id] || [];
-            const comment = findCommentById(comments, commentId);
-            
-            if (comment) {
-                comment.likes = (comment.likes || 0) + 1;
-                localStorage.setItem('problemComments', JSON.stringify(problemComments));
-                loadComments(currentProblem.id);
-                showNotification('コメントにいいねしました！', 'success');
-            }
         }
 
         function replyToComment(commentId) {
