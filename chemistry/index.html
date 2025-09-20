@@ -6,7 +6,7 @@
     <title>🔥 Chemistry Creator v5.1 - MOBILE OPTIMIZED KATEX MHCHEM SYSTEM - 2025-09-21</title>
 
     <!-- KaTeX CSS -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css" integrity="sha384-GvrOXuhMATgEsSwCs4smul74iXGOixntILdUW9XmUC6+HX0sLNAK3q71HotJqlAn" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV" crossorigin="anonymous">
 
     <style>
         :root {
@@ -942,9 +942,9 @@ K = \frac{[\ce{H+}][\ce{OH-}]}{[\ce{H2O}]}
     </div>
 
     <!-- KaTeX JavaScript -->
-    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js" integrity="sha384-cpW21h6RZv/phavutF+AuVYrr+dA8xD9zs6FwLpaCct6O9ctzYFfFr4dgmgccOTx" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" integrity="sha384-XjKyOOlGwcjNTAIQHIpVOOIECsp0yKiC+jgEF7G4nJH6ILEYHg1A2DZrBH3Oa0sN" crossorigin="anonymous"></script>
     <!-- KaTeX mhchem extension -->
-    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/mhchem.min.js" integrity="sha384-LIgAiYlGSAdpNC9+YDjDPF6JeS/RRIumtNo0CmyQERZ/+g0h9MbuYQwf/5pQ4Y4M" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/mhchem.min.js" integrity="sha384-ifpG+NlgMq0kvOSGqGQxW1mJKpjjMDmZdpKGq3tbvD3WPhyshCEEYClriK/wRVU0" crossorigin="anonymous"></script>
 
     <script>
         // 🚀 革命的KaTeX+mhchem統合化学作成システム
@@ -971,29 +971,25 @@ K = \frac{[\ce{H+}][\ce{OH-}]}{[\ce{H2O}]}
             waitForKaTeX() {
                 const checkKaTeX = () => {
                     if (window.katex) {
-                        // mhchemのテストレンダリングで確認
+                        // シンプルなmhchemテスト
                         try {
                             const testResult = window.katex.renderToString('\\ce{H2O}', {
-                                throwOnError: true,
-                                trust: true,
-                                strict: false
+                                throwOnError: true
                             });
-                            if (testResult && testResult.includes('H') && testResult.includes('O')) {
-                                this.addStatus('✅ KaTeX+mhchem レンダリングエンジン準備完了', 'success');
-                                this.renderInitialMath();
-                                return;
-                            }
+                            console.log('mhchem test successful:', testResult);
+                            this.addStatus('✅ KaTeX+mhchem レンダリングエンジン準備完了', 'success');
+                            this.renderInitialMath();
+                            return;
                         } catch (error) {
                             console.warn('mhchem test failed:', error.message);
+                            setTimeout(checkKaTeX, 300);
                         }
-                        // mhchemがまだ読み込まれていない
-                        setTimeout(checkKaTeX, 200);
                     } else {
                         setTimeout(checkKaTeX, 100);
                     }
                 };
-                // 初回は少し待ってから開始
-                setTimeout(checkKaTeX, 500);
+                // ページ読み込み後に少し待つ
+                setTimeout(checkKaTeX, 1000);
             }
 
             // 超シンプル・確実なLaTeXボタンシステム
@@ -1204,30 +1200,22 @@ K = \frac{[\ce{H+}][\ce{OH-}]}{[\ce{H2O}]}
                 try {
                     // displaystyle を自動追加（mhchem式以外）
                     let processedText = text;
-                    if (!text.includes('\\ce{') && !text.includes('\\displaystyle') && !text.includes('\\textstyle')) {
+                    if (!text.includes('\\ce{') && !text.includes('\\pu{') &&
+                        !text.includes('\\displaystyle') && !text.includes('\\textstyle')) {
                         processedText = '\\displaystyle ' + text;
                     }
 
-                    // インライン数式かブロック数式かを判定
-                    const isDisplayMode = text.includes('\\\\') || text.includes('\\begin') || text.length > 30;
-
+                    // レンダリング（動作例と同じオプション）
                     const rendered = window.katex.renderToString(processedText, {
                         throwOnError: false,
-                        displayMode: isDisplayMode,
-                        strict: false,
-                        trust: true // mhchemで必要
+                        displayMode: text.includes('\\\\') || text.includes('\\begin') || text.length > 30
                     });
 
                     this.preview.innerHTML = rendered;
                     this.addStatus('✅ レンダリング完了', 'success');
                 } catch (error) {
-                    // mhchemエラーの場合、より詳細な情報を表示
-                    let errorMessage = error.message;
-                    if (errorMessage.includes('mhchem') || errorMessage.includes('\\ce')) {
-                        errorMessage += ' (mhchem拡張の読み込みを確認してください)';
-                    }
-                    this.preview.innerHTML = `<div style="color: #ef4444;">レンダリングエラー: ${errorMessage}</div>`;
-                    this.addStatus(`❌ レンダリングエラー: ${errorMessage}`, 'error');
+                    this.preview.innerHTML = `<div style="color: #ef4444;">レンダリングエラー: ${error.message}</div>`;
+                    this.addStatus(`❌ レンダリングエラー: ${error.message}`, 'error');
                 }
             }
 
@@ -1239,14 +1227,13 @@ K = \frac{[\ce{H+}][\ce{OH-}]}{[\ce{H2O}]}
                         try {
                             let mathExpr = latex.replace(/\$/g, '');
                             // mhchem式以外にdisplaystyleを追加
-                            if (!mathExpr.includes('\\ce{') && !mathExpr.includes('\\displaystyle') && !mathExpr.includes('\\textstyle')) {
+                            if (!mathExpr.includes('\\ce{') && !mathExpr.includes('\\pu{') &&
+                                !mathExpr.includes('\\displaystyle') && !mathExpr.includes('\\textstyle')) {
                                 mathExpr = '\\displaystyle ' + mathExpr;
                             }
                             const rendered = window.katex.renderToString(mathExpr, {
                                 throwOnError: false,
-                                displayMode: false,
-                                trust: true,
-                                strict: false
+                                displayMode: false
                             });
                             btn.innerHTML = rendered;
                         } catch (error) {
