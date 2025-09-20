@@ -1171,6 +1171,15 @@
 
             const mediaHtml = renderCommentMedia(comment.media_urls || []);
 
+            // Check if current user has liked this comment
+            let hasUserLiked = false;
+            if (window.authClient && window.authClient.isLoggedIn()) {
+                const user = window.authClient.getCurrentUser();
+                const userLikes = JSON.parse(localStorage.getItem('userCommentLikes') || '{}');
+                const likeKey = `${currentProblem.id}_${comment.id}`;
+                hasUserLiked = userLikes[user.id] && userLikes[user.id].includes(likeKey);
+            }
+
             // Debug info for development
             console.log('Rendering comment:', {
                 id: comment.id,
@@ -1179,7 +1188,9 @@
                 author: comment.author,
                 author_name: comment.author_name,
                 created_at: comment.created_at,
-                createdAt: comment.createdAt
+                createdAt: comment.createdAt,
+                likes: comment.likes,
+                hasUserLiked: hasUserLiked
             });
 
             return `
@@ -1196,8 +1207,8 @@
                     <div class="comment-content">${escapeHtml(comment.content)}</div>
                     ${mediaHtml}
                     <div class="comment-actions">
-                        <span class="comment-action" onclick="toggleCommentLike('${comment.id}')">
-                            <i class="fas fa-thumbs-up"></i> いいね (${comment.likes || 0})
+                        <span class="comment-action ${hasUserLiked ? 'text-primary' : ''}" onclick="toggleCommentLike('${comment.id}')">
+                            <i class="fas fa-thumbs-up"></i> ${hasUserLiked ? 'いいね済み' : 'いいね'} (${comment.likes || 0})
                         </span>
                         <span class="comment-action" onclick="replyToComment('${comment.id}')">
                             <i class="fas fa-reply"></i> 返信
@@ -1388,28 +1399,70 @@
             }
 
             const user = window.authClient.getCurrentUser();
+            console.log('Toggling like for comment:', commentId, 'User:', user.id);
 
             try {
-                const result = await window.questaD1.toggleCommentLike(commentId, user.id);
+                // Ensure D1 client is available
+                if (!window.questaD1 && typeof QuestaD1Client !== 'undefined') {
+                    console.log('⚠️ D1 client not available, creating new instance');
+                    window.questaD1 = new QuestaD1Client();
+                }
 
-                if (result.success) {
-                    await loadComments(currentProblem.id);
-                    const action = result.action === 'liked' ? 'いいねしました！' : 'いいねを取り消しました';
-                    showNotification(action, 'success');
+                // Try D1 like toggle first if available
+                if (window.questaD1 && typeof window.questaD1.toggleCommentLike === 'function') {
+                    const result = await window.questaD1.toggleCommentLike(commentId, user.id);
+
+                    if (result.success) {
+                        await loadComments(currentProblem.id);
+                        const action = result.action === 'liked' ? 'いいねしました！' : 'いいねを取り消しました';
+                        showNotification(action, 'success');
+                        return;
+                    } else {
+                        throw new Error(result.error);
+                    }
                 } else {
-                    throw new Error(result.error);
+                    console.warn('⚠️ D1 client not available, using localStorage');
+                    throw new Error('D1 client not available');
                 }
             } catch (error) {
                 console.error('Like toggle error:', error);
-                // Fallback to localStorage
+
+                // Fallback to localStorage like system
+                const userLikes = JSON.parse(localStorage.getItem('userCommentLikes') || '{}');
+                const userKey = user.id;
+                const likeKey = `${currentProblem.id}_${commentId}`;
+
+                if (!userLikes[userKey]) {
+                    userLikes[userKey] = [];
+                }
+
+                const hasLiked = userLikes[userKey].includes(likeKey);
+
+                if (hasLiked) {
+                    // Remove like
+                    userLikes[userKey] = userLikes[userKey].filter(key => key !== likeKey);
+                    showNotification('いいねを取り消しました', 'info');
+                } else {
+                    // Add like
+                    userLikes[userKey].push(likeKey);
+                    showNotification('いいねしました！', 'success');
+                }
+
+                // Update localStorage
+                localStorage.setItem('userCommentLikes', JSON.stringify(userLikes));
+
+                // Update comment likes count in problemComments
                 const comments = problemComments[currentProblem.id] || [];
                 const comment = findCommentById(comments, commentId);
 
                 if (comment) {
-                    comment.likes = (comment.likes || 0) + 1;
+                    if (hasLiked) {
+                        comment.likes = Math.max(0, (comment.likes || 0) - 1);
+                    } else {
+                        comment.likes = (comment.likes || 0) + 1;
+                    }
                     localStorage.setItem('problemComments', JSON.stringify(problemComments));
                     loadComments(currentProblem.id);
-                    showNotification('いいねしました（ローカル保存）', 'warning');
                 }
             }
         }
