@@ -146,6 +146,8 @@
             gap: 4px;
             max-height: 180px;
             overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            scroll-behavior: smooth;
         }
 
         .latex-btn {
@@ -408,6 +410,10 @@
                 gap: 8px;
                 padding: 15px;
                 max-height: 200px;
+                overflow-y: scroll;
+                -webkit-overflow-scrolling: touch;
+                scroll-behavior: smooth;
+                overscroll-behavior: contain;
             }
 
             .latex-btn {
@@ -455,6 +461,10 @@
                 grid-template-columns: repeat(auto-fit, minmax(60px, 1fr));
                 gap: 10px;
                 padding: 15px;
+                overflow-y: scroll;
+                -webkit-overflow-scrolling: touch;
+                scroll-behavior: smooth;
+                overscroll-behavior: contain;
             }
 
             .latex-btn {
@@ -506,6 +516,11 @@
                 grid-template-columns: repeat(auto-fit, minmax(65px, 1fr));
                 gap: 12px;
                 padding: 20px 15px;
+                overflow-y: scroll;
+                -webkit-overflow-scrolling: touch;
+                scroll-behavior: smooth;
+                overscroll-behavior: contain;
+                scroll-snap-type: y proximity;
             }
 
             .latex-btn {
