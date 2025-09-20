@@ -1,0 +1,1052 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>⚡ Physics TikZ Creator v1.0 | Data Manager</title>
+    <meta name="description" content="物理図制作に特化したTikZ Creator。力学、電磁気学、熱力学、波動の図形作成">
+    <meta name="keywords" content="TikZ,物理,Physics,図形作成,教育,JSXGraph">
+
+    <!-- Open Graph -->
+    <meta property="og:title" content="Physics TikZ Creator v1.0">
+    <meta property="og:description" content="物理教育現場での図形教材作成に特化した実用的なツール">
+    <meta property="og:url" content="https://data.allfrom0.top/physics/tikz/">
+    <meta property="og:type" content="website">
+
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://data.allfrom0.top/physics/tikz/">
+
+    <!-- JSXGraph for mathematical plotting -->
+    <link rel="stylesheet" href="https://jsxgraph.uni-bayreuth.de/distrib/jsxgraph.css">
+    <script src="https://jsxgraph.uni-bayreuth.de/distrib/jsxgraphcore.js"></script>
+
+    <!-- CodeMirror for syntax highlighting -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/material-darker.min.css">
+
+    <!-- IcoFont Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/icofont/1.0.1/icofont.min.css">
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #fffbeb;
+            color: #1c1917;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            text-align: center;
+            position: relative;
+        }
+
+        .header-badge {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            background: rgba(255,255,255,0.2);
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 500;
+        }
+
+        .breadcrumb {
+            background: #fef3c7;
+            padding: 8px 16px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            font-size: 14px;
+        }
+
+        .breadcrumb a {
+            color: #d97706;
+            text-decoration: none;
+        }
+
+        .breadcrumb a:hover {
+            text-decoration: underline;
+        }
+
+        h1 {
+            font-size: 1.8rem;
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            opacity: 0.9;
+            font-size: 1rem;
+        }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .panel {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .panel-header {
+            background: #fed7aa;
+            padding: 12px 16px;
+            font-weight: 600;
+            border-bottom: 1px solid #fdba74;
+        }
+
+        .panel-content {
+            padding: 16px;
+        }
+
+        .input-area {
+            height: 400px;
+        }
+
+        .CodeMirror {
+            height: 100%;
+            border: 2px solid #fed7aa;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        .CodeMirror-focused {
+            border-color: #f59e0b;
+        }
+
+        .preview-area {
+            height: 400px;
+            overflow-y: auto;
+            background: #fefefe;
+            border: 2px solid #fed7aa;
+            border-radius: 8px;
+            padding: 16px;
+            text-align: center;
+        }
+
+        .tikz-output {
+            border: 1px solid #fed7aa;
+            border-radius: 8px;
+            background: white;
+            width: 100%;
+            height: 300px;
+            margin: 10px 0;
+        }
+
+        .tools-panel {
+            grid-column: 1 / -1;
+        }
+
+        .mode-buttons {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+        }
+
+        .mode-btn {
+            padding: 8px 16px;
+            background: #fef3c7;
+            border: 2px solid #fed7aa;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .mode-btn.active {
+            background: #f59e0b;
+            color: white;
+            border-color: #f59e0b;
+        }
+
+        .mode-btn:hover:not(.active) {
+            background: #fed7aa;
+        }
+
+        .toolbar {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .tool-btn {
+            padding: 12px 8px;
+            background: #fffbeb;
+            border: 1px solid #fdba74;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 12px;
+            text-align: center;
+            transition: all 0.2s;
+            user-select: none;
+        }
+
+        .tool-btn:hover {
+            background: #fed7aa;
+            transform: translateY(-1px);
+        }
+
+        .tool-btn:active {
+            background: #f59e0b;
+            color: white;
+            transform: translateY(0);
+        }
+
+        .samples {
+            margin-top: 16px;
+        }
+
+        .sample-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 8px;
+        }
+
+        .sample-btn {
+            padding: 8px;
+            background: #fef3c7;
+            border: 1px solid #fbbf24;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 11px;
+            text-align: center;
+            transition: all 0.2s;
+        }
+
+        .sample-btn:hover {
+            background: #fed7aa;
+            transform: translateY(-1px);
+        }
+
+        .status {
+            background: #dcfce7;
+            border: 1px solid #86efac;
+            color: #166534;
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 16px;
+            text-align: center;
+        }
+
+        .error {
+            background: #fee2e2;
+            border-color: #fca5a5;
+            color: #991b1b;
+        }
+
+        .section-title {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #92400e;
+        }
+
+        @media (max-width: 768px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .container {
+                padding: 10px;
+            }
+
+            .input-area,
+            .preview-area {
+                height: 300px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- パンくずナビ -->
+        <div class="breadcrumb">
+            <a href="https://data.allfrom0.top/">🏠 Data Manager</a> &gt;
+            <a href="https://data.allfrom0.top/physics/">⚡ Physics</a> &gt;
+            <span>📐 TikZ Creator</span>
+        </div>
+
+        <header>
+            <div class="header-badge">v1.0 Physics</div>
+            <h1><i class="icofont-lightning-ray"></i> Physics TikZ Creator v1.0</h1>
+            <p class="subtitle"><i class="icofont-chart-line"></i> 物理図制作専用システム - JSXGraph + リアルタイムレンダリング</p>
+        </header>
+
+        <div class="main-grid">
+            <!-- 入力エリア -->
+            <div class="panel">
+                <div class="panel-header"><i class="icofont-file-code"></i> TikZコード入力</div>
+                <div class="panel-content">
+                    <div class="input-area">
+                        <textarea id="tikzInput" placeholder="物理図のTikZコードを入力してください...
+
+例:
+% 力のベクトル
+\draw[thick,->] (0,0) -- (2,1) node[above] {$\vec{F}_1$};
+\draw[thick,->] (0,0) -- (1,2) node[left] {$\vec{F}_2$};
+\draw[thick,->,red] (0,0) -- (3,3) node[above right] {$\vec{F}_{合}$};"></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- プレビューエリア -->
+            <div class="panel">
+                <div class="panel-header"><i class="icofont-eye-alt"></i> プレビュー</div>
+                <div class="panel-content">
+                    <div id="preview" class="preview-area">
+                        <p style="color: #92400e; margin-top: 100px;">
+                            物理図のTikZコードを入力すると、ここに図形が表示されます
+                        </p>
+
+                        <!-- JSXGraph テスト用 -->
+                        <div style="border: 1px solid #fdba74; margin: 10px; padding: 10px; background: #fef3c7;">
+                            <h4 style="margin: 0 0 10px 0; color: #92400e;">JSXGraph テスト:</h4>
+                            <div id="test-board" class="tikz-output"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ツールパネル -->
+        <div class="panel tools-panel">
+            <div class="panel-header"><i class="icofont-tools-alt-2"></i> 物理図制作ツール</div>
+            <div class="panel-content">
+                <!-- モード選択 -->
+                <div class="section-title"><i class="icofont-lightning-ray"></i> 物理分野</div>
+                <div class="mode-buttons">
+                    <button class="mode-btn active" data-mode="mechanics">力学</button>
+                    <button class="mode-btn" data-mode="electromagnetism">電磁気</button>
+                    <button class="mode-btn" data-mode="thermodynamics">熱力学</button>
+                    <button class="mode-btn" data-mode="waves">波動</button>
+                    <button class="mode-btn" data-mode="modern">現代物理</button>
+                </div>
+
+                <!-- 座標軸設定 -->
+                <div class="section-title"><i class="icofont-ruler-compass-alt"></i> 表示設定</div>
+                <div class="axis-controls" style="display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap;">
+                    <button class="mode-btn active" id="axisOn" style="font-size: 12px; padding: 6px 12px;">座標軸あり</button>
+                    <button class="mode-btn" id="axisOff" style="font-size: 12px; padding: 6px 12px;">座標軸なし</button>
+                </div>
+
+                <!-- エディタ制御 -->
+                <div class="section-title"><i class="icofont-file-code"></i> エディタ制御</div>
+                <div class="editor-controls" style="display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap;">
+                    <button class="mode-btn" id="clearCode" style="font-size: 12px; padding: 6px 12px; background: #ef4444; color: white; border-color: #ef4444;"><i class="icofont-ui-delete"></i> コードクリア</button>
+                    <button class="mode-btn" id="exportPNG" style="font-size: 12px; padding: 6px 12px; background: #10b981; color: white; border-color: #10b981;"><i class="icofont-camera"></i> PNG出力</button>
+                    <button class="mode-btn" id="exportSVG" style="font-size: 12px; padding: 6px 12px; background: #f59e0b; color: white; border-color: #f59e0b;"><i class="icofont-file-image"></i> SVG出力</button>
+                </div>
+
+                <!-- ツールバー -->
+                <div class="section-title"><i class="icofont-tools"></i> 物理図ツール</div>
+                <div id="toolbar" class="toolbar">
+                    <!-- JavaScriptで動的に生成 -->
+                </div>
+
+                <!-- サンプル -->
+                <div class="samples">
+                    <div class="section-title"><i class="icofont-file-spreadsheet"></i> 物理テンプレート</div>
+                    <div class="sample-grid">
+                        <button class="sample-btn" data-sample="力の合成">力の合成</button>
+                        <button class="sample-btn" data-sample="斜面">斜面運動</button>
+                        <button class="sample-btn" data-sample="振り子">振り子</button>
+                        <button class="sample-btn" data-sample="電場">電場</button>
+                        <button class="sample-btn" data-sample="磁場">磁場</button>
+                        <button class="sample-btn" data-sample="回路">電気回路</button>
+                        <button class="sample-btn" data-sample="波動">波動</button>
+                        <button class="sample-btn" data-sample="干渉">干渉</button>
+                        <button class="sample-btn" data-sample="回折">回折</button>
+                        <button class="sample-btn" data-sample="熱機関">熱機関</button>
+                        <button class="sample-btn" data-sample="PVグラフ">PVグラフ</button>
+                        <button class="sample-btn" data-sample="エネルギー">エネルギー図</button>
+                    </div>
+                </div>
+
+                <!-- システム情報パネル -->
+                <div class="info-panel" style="margin-top: 16px;">
+                    <div class="section-title"><i class="icofont-info-circle"></i> システム情報</div>
+                    <div style="background: #fffbeb; padding: 12px; border-radius: 8px; font-size: 12px; color: #92400e;">
+                        <div><i class="icofont-web"></i> Domain: <strong>data.allfrom0.top/physics/tikz</strong></div>
+                        <div><i class="icofont-rocket-alt-1"></i> Version: <strong>v1.0 Physics</strong></div>
+                        <div><i class="icofont-flash"></i> Engine: <strong>JSXGraph + CodeMirror</strong></div>
+                        <div><i class="icofont-chart-bar-graph"></i> Part of: <strong>Data Manager Education Suite</strong></div>
+                    </div>
+                </div>
+
+                <!-- デバッグコンソール -->
+                <div class="debug-panel" style="margin-top: 16px;">
+                    <div class="section-title"><i class="icofont-bug"></i> デバッグコンソール</div>
+                    <div id="debugOutput" style="background: #1e1e1e; color: #fff; padding: 12px; border-radius: 8px; height: 120px; overflow-y: auto; font-family: monospace; font-size: 12px;">
+                        <div style="color: #fbbf24;">Physics TikZ Creator v1.0 初期化中...</div>
+                    </div>
+                </div>
+
+                <!-- ステータス -->
+                <div id="status" class="status">
+                    JSXGraph読み込み中...
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CodeMirror JavaScript -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/stex/stex.min.js"></script>
+
+    <script>
+        // Physics TikZ Creator v1.0 - 物理図制作専用システム
+        class PhysicsTikZCreator {
+            constructor() {
+                this.input = document.getElementById('tikzInput');
+                this.preview = document.getElementById('preview');
+                this.status = document.getElementById('status');
+                this.toolbar = document.getElementById('toolbar');
+                this.debugOutput = document.getElementById('debugOutput');
+                this.currentMode = 'mechanics';
+                this.editor = null;
+                this.boardCounter = 0;
+                this.showAxis = true;
+
+                this.init();
+            }
+
+            init() {
+                this.log('Physics TikZ Creator v1.0 システム初期化開始');
+                this.log('物理教育専用JSXGraph描画システム');
+                this.setupCodeEditor();
+                this.setupEventListeners();
+                this.setupPhysicsModes();
+                this.updateToolbar();
+                this.initJSXGraph();
+                this.log('物理図制作システム準備完了');
+            }
+
+            log(message, type = 'info') {
+                const timestamp = new Date().toLocaleTimeString();
+                const colors = {
+                    info: '#fbbf24',
+                    error: '#ef4444',
+                    warn: '#f59e0b',
+                    success: '#10b981'
+                };
+
+                const logEntry = document.createElement('div');
+                logEntry.style.color = colors[type] || colors.info;
+                logEntry.innerHTML = `[${timestamp}] [Physics] ${message}`;
+
+                this.debugOutput.appendChild(logEntry);
+                this.debugOutput.scrollTop = this.debugOutput.scrollHeight;
+
+                // 100行を超えたら古いログを削除
+                if (this.debugOutput.children.length > 100) {
+                    this.debugOutput.removeChild(this.debugOutput.firstChild);
+                }
+            }
+
+            initJSXGraph() {
+                this.log('JSXGraph物理描画エンジン初期化開始');
+                try {
+                    if (typeof JXG !== 'undefined') {
+                        // テスト用ボード作成
+                        const testBoard = JXG.JSXGraph.initBoard('test-board', {
+                            boundingbox: [-4, 4, 4, -4],
+                            axis: this.showAxis,
+                            showCopyright: false,
+                            showNavigation: false
+                        });
+
+                        // 物理テスト用図形 - 力のベクトル
+                        const forceVector = testBoard.create('arrow', [[0, 0], [2, 1]], {
+                            strokeColor: 'blue',
+                            strokeWidth: 3
+                        });
+
+                        testBoard.create('text', [1, 0.7, 'F'], {
+                            fontSize: 16,
+                            color: 'blue'
+                        });
+
+                        testBoard.create('text', [0, -3, 'Physics TikZ Test'], {
+                            fontSize: 14,
+                            color: '#f59e0b'
+                        });
+
+                        this.log('JSXGraph物理描画エンジン初期化完了', 'success');
+                        this.status.textContent = '✅ Physics TikZ システム準備完了';
+                        this.status.className = 'status';
+                        this.loadPhysicsSample();
+                    } else {
+                        this.log('JSXGraph未読み込み', 'error');
+                        this.status.textContent = '❌ JSXGraph読み込みエラー';
+                    }
+                } catch (error) {
+                    this.log('JSXGraph初期化エラー: ' + error.message, 'error');
+                }
+            }
+
+            setupCodeEditor() {
+                this.log('物理専用CodeMirrorエディタ初期化');
+                try {
+                    this.editor = CodeMirror.fromTextArea(this.input, {
+                        mode: 'stex',
+                        theme: 'material-darker',
+                        lineNumbers: true,
+                        autoCloseBrackets: true,
+                        matchBrackets: true,
+                        indentUnit: 2,
+                        tabSize: 2,
+                        lineWrapping: true
+                    });
+
+                    this.editor.on('change', () => {
+                        setTimeout(() => this.renderPhysicsTikZ(), 500);
+                    });
+
+                    this.log('物理専用エディタ初期化完了', 'success');
+                } catch (error) {
+                    this.log('エディタ初期化エラー: ' + error.message, 'error');
+                    this.input.style.display = 'block';
+                }
+            }
+
+            setupEventListeners() {
+                // サンプル選択
+                document.querySelectorAll('.sample-btn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        this.loadPhysicsTemplate(btn.dataset.sample);
+                        this.log(`物理テンプレート読み込み: ${btn.dataset.sample}`);
+                    });
+                });
+
+                // モード選択
+                document.querySelectorAll('[data-mode]').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        document.querySelectorAll('[data-mode]').forEach(b => b.classList.remove('active'));
+                        btn.classList.add('active');
+                        this.currentMode = btn.dataset.mode;
+                        this.updateToolbar();
+                        this.log(`物理分野変更: ${btn.dataset.mode}`);
+                    });
+                });
+
+                // 座標軸制御
+                document.getElementById('axisOn').addEventListener('click', () => {
+                    document.querySelectorAll('.axis-controls .mode-btn').forEach(b => b.classList.remove('active'));
+                    document.getElementById('axisOn').classList.add('active');
+                    this.showAxis = true;
+                    this.log('座標軸表示: ON');
+                    this.renderPhysicsTikZ();
+                });
+
+                document.getElementById('axisOff').addEventListener('click', () => {
+                    document.querySelectorAll('.axis-controls .mode-btn').forEach(b => b.classList.remove('active'));
+                    document.getElementById('axisOff').classList.add('active');
+                    this.showAxis = false;
+                    this.log('座標軸表示: OFF');
+                    this.renderPhysicsTikZ();
+                });
+
+                // エディタ制御
+                document.getElementById('clearCode').addEventListener('click', () => {
+                    if (confirm('物理図のコードをクリアしますか？')) {
+                        if (this.editor) {
+                            this.editor.setValue('');
+                        } else {
+                            this.input.value = '';
+                        }
+                        this.preview.innerHTML = '<p style="color: #92400e; margin-top: 150px;">物理図のTikZコードを入力してください</p>';
+                        this.log('物理図コードクリア実行', 'success');
+                    }
+                });
+
+                document.getElementById('exportPNG').addEventListener('click', () => {
+                    this.exportImage('png');
+                });
+
+                document.getElementById('exportSVG').addEventListener('click', () => {
+                    this.exportImage('svg');
+                });
+            }
+
+            setupPhysicsModes() {
+                this.physicsToolsets = {
+                    mechanics: [
+                        { code: 'draw[thick,->,blue] (0,0) -- (2,1) node[above] {$\\vec{F}$};', label: '力ベクトル' },
+                        { code: 'draw[thick] (0,0) -- (3,0); \\draw[thick] (0,0) -- (2.12, 2.12);', label: '斜面' },
+                        { code: 'draw (0,2) -- (0,0) -- (0,-2); \\draw (0,0) circle (0.1);', label: '振り子' },
+                        { code: 'draw[->] (0,0) -- (2,0) node[right] {$v$}; \\draw[->] (0,0) -- (0,1.5) node[above] {$a$};', label: '速度・加速度' },
+                        { code: 'draw (0,0) rectangle (1,0.5); \\draw[->] (1.5,0.25) -- (2.5,0.25) node[above] {$F$};', label: '物体と力' },
+                        { code: 'draw[domain=-2:2] plot (\\x, \\x*\\x/2);', label: '軌道' },
+                    ],
+                    electromagnetism: [
+                        { code: 'draw[blue] (0,0) circle (0.2); \\draw[->] (0,0) -- (1.5,0) node[right] {$\\vec{E}$};', label: '電場' },
+                        { code: 'draw[red,thick] (0,-1) -- (0,1); \\foreach \\i in {-1,-0.5,0,0.5,1} \\draw[->] (\\i,-0.5) -- (\\i,0.5);', label: '磁場' },
+                        { code: 'draw (0,0) -- (2,0) -- (2,1) -- (0,1) -- cycle; \\draw (0.5,0) -- (0.5,1);', label: '回路' },
+                        { code: 'draw[red] (+1,0) circle (0.2) node {+}; \\draw[blue] (-1,0) circle (0.2) node {-};', label: '電荷' },
+                        { code: 'draw[thick] (0,0) -- (2,0); \\draw (1,0) circle (0.3);', label: 'コンデンサ' },
+                        { code: 'draw[thick] (0,0) -- (1,0); \\draw[thick,red] (1,0) -- (1,1) -- (2,1) -- (2,0) -- (3,0);', label: 'コイル' },
+                    ],
+                    thermodynamics: [
+                        { code: 'draw[->] (0,0) -- (3,0) node[right] {$V$}; \\draw[->] (0,0) -- (0,3) node[above] {$P$};', label: 'PV図' },
+                        { code: 'draw[thick] (0.5,2.5) -- (2.5,0.5); \\draw (1.5,1.5) node {等温線};', label: '等温過程' },
+                        { code: 'draw[thick] (1,0.5) -- (1,2.5); \\draw (1.2,1.5) node {等積};', label: '等積過程' },
+                        { code: 'draw[thick] (0.5,1.5) -- (2.5,1.5); \\draw (1.5,1.7) node {等圧};', label: '等圧過程' },
+                        { code: 'draw (0,0) rectangle (2,1); \\draw[->] (2.5,0.5) -- (3.5,0.5); \\draw (4,0) rectangle (5,0.8);', label: '熱機関' },
+                        { code: 'draw[red] (1,1.5) circle (0.3); \\draw[->] (1,1.2) -- (1,0.8) node[below] {熱};', label: '熱伝導' },
+                    ],
+                    waves: [
+                        { code: 'draw[domain=0:4*pi,smooth] plot (\\x/2, sin(\\x r));', label: '正弦波' },
+                        { code: 'draw[blue,domain=0:4*pi] plot (\\x/2, sin(\\x r)); \\draw[red,domain=0:4*pi] plot (\\x/2+1, sin(\\x r));', label: '波の重ね合わせ' },
+                        { code: 'draw[thick] (0,0) -- (2,0); \\draw[thick] (0,0) -- (1.41,1.41); \\draw[dashed] (1.41,1.41) -- (2,0);', label: '反射' },
+                        { code: 'draw (0,0) -- (3,0); \\draw (1,0) -- (1,2); \\draw[red] (0.5,0) arc (0:45:0.5);', label: '屈折' },
+                        { code: 'draw[thick] (0,-1) -- (0,1); \\draw[red] (0.5,-0.5) arc (-90:90:0.5);', label: '回折' },
+                        { code: 'draw[blue] (0,1) -- (2,1); \\draw[red] (0,-1) -- (2,-1); \\draw[purple] (1,0) circle (0.1);', label: '干渉' },
+                    ],
+                    modern: [
+                        { code: 'draw[thick] (0,0) -- (2,0); \\draw[->] (0.5,0) -- (0.5,0.5) node[above] {$h\\nu$};', label: '光電効果' },
+                        { code: 'draw (1,0) circle (0.5); \\draw[red] (1,0) circle (0.8);', label: '原子模型' },
+                        { code: 'draw[->] (0,0) -- (1,0) node[below] {$e^-$}; \\draw[dashed] (1,0) -- (2,0);', label: '電子線' },
+                        { code: 'draw[thick,red] (0,1) -- (2,1); \\draw[thick,blue] (0,-1) -- (2,-1);', label: 'エネルギー準位' },
+                        { code: 'draw[domain=-2:2] plot (\\x, exp(-\\x*\\x)); \\draw (0,-0.5) node {$\\psi$};', label: '波動関数' },
+                        { code: 'draw[->] (0,0) -- (2,0) node[right] {$t$}; \\draw (1,0) -- (1,1) node[above] {崩壊};', label: '放射性崩壊' },
+                    ]
+                };
+            }
+
+            updateToolbar() {
+                const tools = this.physicsToolsets[this.currentMode] || [];
+                this.toolbar.innerHTML = tools.map(tool =>
+                    `<button class="tool-btn" data-code="${tool.code}">${tool.label}</button>`
+                ).join('');
+
+                this.toolbar.querySelectorAll('.tool-btn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        this.insertCode('\\' + btn.dataset.code);
+                    });
+                });
+            }
+
+            insertCode(code) {
+                if (this.editor) {
+                    const cursor = this.editor.getCursor();
+                    this.editor.replaceRange(code + '\n', cursor);
+                    this.editor.focus();
+                }
+            }
+
+            loadPhysicsTemplate(templateName) {
+                const templates = {
+                    '力の合成': '% 力の合成\n\\draw[thick,->,blue] (0,0) -- (2,1) node[above] {$\\vec{F}_1$};\n\\draw[thick,->,green] (0,0) -- (1,2) node[left] {$\\vec{F}_2$};\n\\draw[thick,->,red] (0,0) -- (3,3) node[above right] {$\\vec{F}_{合}$};\n\\draw[dashed] (2,1) -- (3,3);\n\\draw[dashed] (1,2) -- (3,3);',
+                    '斜面': '% 斜面運動\n\\draw[thick] (0,0) -- (4,0) -- (3,2) -- cycle;\n\\draw (2.5,0.5) rectangle (3,1);\n\\draw[->] (2.75,0.75) -- (2.25,0.25) node[below left] {$mg\\sin\\theta$};\n\\draw[->] (2.75,0.75) -- (2.75,0.25) node[below] {$mg\\cos\\theta$};\n\\draw[->] (2.75,0.75) -- (2.75,1.75) node[above] {$N$};',
+                    '振り子': '% 振り子\n\\draw[thick] (0,3) -- (0,0);\n\\draw[thick] (0,3) -- (2,1);\n\\draw (2,1) circle (0.2);\n\\draw[->] (2,1) -- (2,0) node[below] {$mg$};\n\\draw[->] (2,1) -- (1,2) node[above left] {$T$};\n\\draw (0,2.5) arc (270:315:0.5) node[midway,right] {$\\theta$};',
+                    '電場': '% 電場\n\\draw[red] (0,0) circle (0.2) node {+};\n\\foreach \\a in {0,30,60,90,120,150,180,210,240,270,300,330}\n  \\draw[->] (0,0) -- (\\a:1.5);\n\\draw (0,-2.5) node {点電荷の電場};',
+                    '磁場': '% 磁場\n\\draw[thick,blue] (0,-2) -- (0,2) node[above] {導線};\n\\foreach \\r in {0.5,1,1.5} {\n  \\draw[red] (0,0) circle (\\r);\n}\n\\draw (2,0) node {磁場};\n\\draw[->] (0.5,0) arc (0:45:0.5);\n\\draw (0.7,0.2) node {$B$};',
+                    '回路': '% 電気回路\n\\draw[thick] (0,0) -- (4,0) -- (4,2) -- (0,2) -- cycle;\n\\draw (1,0) -- (1,0.3) -- (1.2,0.5) -- (1,0.7) -- (0.8,0.9) -- (1,1.1) -- (1.2,1.3) -- (1,1.5) -- (1,2);\n\\draw (3,0.8) rectangle (3.4,1.2) node[right] {R};\n\\draw (0.5,1.8) -- (0.5,2.2) node[above] {+};\n\\draw (0.5,0.2) -- (0.5,-0.2) node[below] {-};',
+                    '波動': '% 波動\n\\draw[->] (0,0) -- (6,0) node[right] {$x$};\n\\draw[->] (0,-2) -- (0,2) node[above] {$y$};\n\\draw[blue,thick,domain=0:5.5,smooth] plot (\\x, sin(\\x*180/3.14159*2));\n\\draw (3,-1.5) node {$y = A\\sin(kx - \\omega t)$};',
+                    '干渉': '% 干渉\n\\draw[blue] (0,1) -- (4,1);\n\\draw[red] (0,-1) -- (4,-1);\n\\draw[purple,thick] (2,0) -- (4,0);\n\\draw (0,1.2) node {波1};\n\\draw (0,-1.2) node {波2};\n\\draw (3,0.2) node {合成波};',
+                    '回折': '% 回折\n\\draw[thick] (0,-2) -- (0,-0.5);\n\\draw[thick] (0,0.5) -- (0,2);\n\\draw[blue] (-2,0) -- (0,0);\n\\draw[red] (0,0) -- (2,1);\n\\draw[red] (0,0) -- (2,0);\n\\draw[red] (0,0) -- (2,-1);\n\\draw (-1,0.2) node {入射波};\n\\draw (1.5,0.2) node {回折波};',
+                    '熱機関': '% 熱機関\n\\draw (0,2) rectangle (2,3) node[midway] {高温熱源};\n\\draw (0,0) rectangle (2,1) node[midway] {低温熱源};\n\\draw (0.5,1.2) rectangle (1.5,1.8) node[midway] {熱機関};\n\\draw[->] (1,2) -- (1,1.8) node[midway,left] {$Q_H$};\n\\draw[->] (1,1.2) -- (1,1) node[midway,left] {$Q_L$};\n\\draw[->] (1.5,1.5) -- (2.5,1.5) node[above] {$W$};',
+                    'PVグラフ': '% PVグラフ\n\\draw[->] (0,0) -- (4,0) node[right] {$V$};\n\\draw[->] (0,0) -- (0,3) node[above] {$P$};\n\\draw[thick,blue] (0.5,2.5) to[out=-30,in=150] (3.5,0.5);\n\\draw (2,1.5) node {等温線};\n\\draw[thick,red] (1,0.5) -- (1,2.5);\n\\draw (1.2,1.5) node {等積};',
+                    'エネルギー': '% エネルギー図\n\\draw[->] (0,0) -- (5,0) node[right] {位置};\n\\draw[->] (0,0) -- (0,4) node[above] {エネルギー};\n\\draw[blue,thick] (0.5,3) .. controls (2,1) and (3,1) .. (4.5,3) node[right] {$U(x)$};\n\\draw[red,thick] (0.5,2.5) -- (4.5,2.5) node[right] {$E$};\n\\draw[green,thick] (0.5,0) -- (4.5,1.5) node[right] {$K(x)$};'
+                };
+
+                const template = templates[templateName] || `% ${templateName}`;
+
+                if (this.editor) {
+                    this.editor.setValue(template);
+                } else {
+                    this.input.value = template;
+                }
+
+                setTimeout(() => this.renderPhysicsTikZ(), 100);
+            }
+
+            parsePhysicsTikZCode(tikzCode) {
+                const commands = [];
+                const lines = tikzCode.split('\n');
+
+                for (let line of lines) {
+                    line = line.trim();
+                    if (line.startsWith('\\draw') || line.startsWith('\\foreach')) {
+                        const cmd = this.parsePhysicsDrawCommand(line);
+                        if (cmd) commands.push(cmd);
+                    }
+                }
+
+                return commands;
+            }
+
+            parsePhysicsDrawCommand(line) {
+                // 物理ベクトル（矢印）
+                if (line.includes('->') && !line.includes('domain')) {
+                    const coords = this.extractCoordinates(line);
+                    if (coords.length >= 2) {
+                        const color = this.extractColor(line) || 'blue';
+                        return {
+                            type: 'arrow',
+                            start: coords[0],
+                            end: coords[1],
+                            color: color,
+                            thick: line.includes('thick')
+                        };
+                    }
+                }
+
+                // 円・点電荷など
+                if (line.includes('circle')) {
+                    const match = line.match(/\\draw.*\((.*?),(.*?)\).*circle.*\((.*?)\)/);
+                    if (match) {
+                        const color = this.extractColor(line) || 'black';
+                        return {
+                            type: 'circle',
+                            center: [parseFloat(match[1]), parseFloat(match[2])],
+                            radius: parseFloat(match[3]),
+                            color: color
+                        };
+                    }
+                }
+
+                // 長方形・物体
+                if (line.includes('rectangle')) {
+                    const match = line.match(/\\draw.*\((.*?),(.*?)\).*rectangle.*\((.*?),(.*?)\)/);
+                    if (match) {
+                        return {
+                            type: 'rectangle',
+                            corner1: [parseFloat(match[1]), parseFloat(match[2])],
+                            corner2: [parseFloat(match[3]), parseFloat(match[4])],
+                            color: this.extractColor(line) || 'black'
+                        };
+                    }
+                }
+
+                // 関数グラフ（波動など）
+                if (line.includes('domain') && line.includes('plot')) {
+                    return {
+                        type: 'function',
+                        domain: this.extractDomain(line),
+                        color: this.extractColor(line) || 'blue',
+                        func: this.extractFunction(line)
+                    };
+                }
+
+                // 通常の線分
+                if (line.includes('--')) {
+                    const coords = this.extractCoordinates(line);
+                    if (coords.length >= 2) {
+                        return {
+                            type: 'line',
+                            points: coords,
+                            color: this.extractColor(line) || 'black',
+                            thick: line.includes('thick'),
+                            dashed: line.includes('dashed')
+                        };
+                    }
+                }
+
+                return null;
+            }
+
+            extractColor(line) {
+                const colors = ['red', 'blue', 'green', 'purple', 'orange', 'yellow', 'black'];
+                for (let color of colors) {
+                    if (line.includes(color)) return color;
+                }
+                return null;
+            }
+
+            extractDomain(line) {
+                const match = line.match(/domain=(.*?):(.*?)[,\]]/);
+                if (match) {
+                    return [parseFloat(match[1]), parseFloat(match[2])];
+                }
+                return [-2, 2];
+            }
+
+            extractFunction(line) {
+                if (line.includes('sin')) return 'sin';
+                if (line.includes('cos')) return 'cos';
+                if (line.includes('exp')) return 'exp';
+                return 'linear';
+            }
+
+            extractCoordinates(line) {
+                const coords = [];
+                const matches = line.match(/\((.*?),(.*?)\)/g);
+                if (matches) {
+                    for (let match of matches) {
+                        const coord = match.replace(/[()]/g, '').split(',');
+                        if (!isNaN(coord[0]) && !isNaN(coord[1])) {
+                            coords.push([parseFloat(coord[0]), parseFloat(coord[1])]);
+                        }
+                    }
+                }
+                return coords;
+            }
+
+            renderWithJSXGraph(commands) {
+                try {
+                    this.boardCounter++;
+                    const boardId = 'physics-board-' + this.boardCounter;
+
+                    this.preview.innerHTML = `<div id="${boardId}" class="tikz-output"></div>`;
+
+                    const board = JXG.JSXGraph.initBoard(boardId, {
+                        boundingbox: [-5, 5, 5, -5],
+                        axis: this.showAxis,
+                        showCopyright: false,
+                        showNavigation: false
+                    });
+
+                    for (let cmd of commands) {
+                        if (cmd.type === 'arrow') {
+                            board.create('arrow', [cmd.start, cmd.end], {
+                                strokeColor: cmd.color,
+                                strokeWidth: cmd.thick ? 3 : 2
+                            });
+                        } else if (cmd.type === 'line') {
+                            const points = cmd.points.map(p => board.create('point', p, {visible: false}));
+                            for (let i = 0; i < points.length - 1; i++) {
+                                board.create('segment', [points[i], points[i + 1]], {
+                                    strokeColor: cmd.color,
+                                    strokeWidth: cmd.thick ? 3 : 2,
+                                    dash: cmd.dashed ? 2 : 0
+                                });
+                            }
+                        } else if (cmd.type === 'circle') {
+                            board.create('circle', [cmd.center, cmd.radius], {
+                                strokeColor: cmd.color,
+                                strokeWidth: 2
+                            });
+                        } else if (cmd.type === 'rectangle') {
+                            const [x1, y1] = cmd.corner1;
+                            const [x2, y2] = cmd.corner2;
+                            const p1 = board.create('point', [x1, y1], {visible: false});
+                            const p2 = board.create('point', [x2, y1], {visible: false});
+                            const p3 = board.create('point', [x2, y2], {visible: false});
+                            const p4 = board.create('point', [x1, y2], {visible: false});
+
+                            board.create('polygon', [p1, p2, p3, p4], {
+                                strokeColor: cmd.color,
+                                strokeWidth: 2,
+                                fillColor: 'none'
+                            });
+                        } else if (cmd.type === 'function') {
+                            let func;
+                            if (cmd.func === 'sin') {
+                                func = function(x) { return Math.sin(x * 2); };
+                            } else if (cmd.func === 'cos') {
+                                func = function(x) { return Math.cos(x * 2); };
+                            } else if (cmd.func === 'exp') {
+                                func = function(x) { return Math.exp(-x * x); };
+                            } else {
+                                func = function(x) { return x; };
+                            }
+
+                            board.create('functiongraph', [func, cmd.domain[0], cmd.domain[1]], {
+                                strokeColor: cmd.color,
+                                strokeWidth: 3
+                            });
+                        }
+                    }
+
+                    this.log(`物理図レンダリング完了: ${commands.length} 要素`, 'success');
+                    this.status.textContent = '✅ 物理図レンダリング完了';
+
+                } catch (error) {
+                    this.log('物理図レンダリングエラー: ' + error.message, 'error');
+                    this.preview.innerHTML = `<p style="color: #ef4444; margin-top: 150px;">レンダリングエラー: ${error.message}</p>`;
+                }
+            }
+
+            renderPhysicsTikZ() {
+                const tikzInput = this.editor ? this.editor.getValue() : this.input.value.trim();
+                if (!tikzInput) {
+                    this.preview.innerHTML = '<p style="color: #92400e; margin-top: 150px;">物理図のTikZコードを入力してください</p>';
+                    return;
+                }
+
+                try {
+                    this.log('物理図レンダリング開始');
+                    const commands = this.parsePhysicsTikZCode(tikzInput);
+                    this.log(`解析結果: ${commands.length} 物理コマンド`);
+
+                    if (commands.length > 0) {
+                        this.renderWithJSXGraph(commands);
+                    } else {
+                        this.preview.innerHTML = '<p style="color: #f59e0b; margin-top: 150px;">解析できる物理コマンドがありません</p>';
+                    }
+
+                } catch (error) {
+                    this.preview.innerHTML = `<p style="color: #ef4444; margin-top: 150px;">エラー: ${error.message}</p>`;
+                    this.log('物理図レンダリング例外: ' + error.message, 'error');
+                }
+            }
+
+            loadPhysicsSample() {
+                const sample = '% 力の合成\n\\draw[thick,->,blue] (0,0) -- (2,1) node[above] {$\\vec{F}_1$};\n\\draw[thick,->,green] (0,0) -- (1,2) node[left] {$\\vec{F}_2$};\n\\draw[thick,->,red] (0,0) -- (3,3) node[above right] {$\\vec{F}_{合}$};';
+
+                if (this.editor) {
+                    this.editor.setValue(sample);
+                } else {
+                    this.input.value = sample;
+                }
+
+                setTimeout(() => this.renderPhysicsTikZ(), 100);
+                this.log('物理サンプル読み込み完了', 'success');
+            }
+
+            exportImage(format) {
+                try {
+                    const boardId = 'physics-board-' + this.boardCounter;
+                    const boardElement = document.getElementById(boardId);
+
+                    if (!boardElement) {
+                        this.log('エラー: レンダリング済みの物理図が見つかりません', 'error');
+                        alert('物理図をレンダリングしてから出力してください');
+                        return;
+                    }
+
+                    const svgElement = boardElement.querySelector('svg');
+                    if (!svgElement) {
+                        this.log('エラー: SVG要素が見つかりません', 'error');
+                        alert('SVG要素が見つかりません');
+                        return;
+                    }
+
+                    if (format === 'svg') {
+                        this.downloadSVG(svgElement, 'physics');
+                    } else if (format === 'png') {
+                        this.downloadPNG(svgElement, 'physics');
+                    }
+
+                } catch (error) {
+                    this.log('物理図出力エラー: ' + error.message, 'error');
+                    alert('物理図出力でエラーが発生しました: ' + error.message);
+                }
+            }
+
+            downloadSVG(svgElement, prefix = 'physics') {
+                try {
+                    const svgClone = svgElement.cloneNode(true);
+                    svgClone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+                    svgClone.setAttribute('xmlns:xlink', 'http://www.w3.org/1999/xlink');
+
+                    const svgString = new XMLSerializer().serializeToString(svgClone);
+                    const timestamp = new Date().toISOString().slice(0, 19).replace(/[:-]/g, '');
+                    const filename = `${prefix}_figure_${timestamp}.svg`;
+
+                    const blob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
+                    const url = URL.createObjectURL(blob);
+
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = filename;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    URL.revokeObjectURL(url);
+
+                    this.log(`物理図SVGファイル出力完了: ${filename}`, 'success');
+
+                } catch (error) {
+                    this.log('SVG出力エラー: ' + error.message, 'error');
+                    throw error;
+                }
+            }
+
+            downloadPNG(svgElement, prefix = 'physics') {
+                try {
+                    const svgClone = svgElement.cloneNode(true);
+                    svgClone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+
+                    const svgString = new XMLSerializer().serializeToString(svgClone);
+                    const timestamp = new Date().toISOString().slice(0, 19).replace(/[:-]/g, '');
+                    const filename = `${prefix}_figure_${timestamp}.png`;
+
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    const img = new Image();
+
+                    img.crossOrigin = 'anonymous';
+
+                    img.onload = () => {
+                        try {
+                            const scale = 2;
+                            canvas.width = img.width * scale;
+                            canvas.height = img.height * scale;
+                            ctx.scale(scale, scale);
+
+                            ctx.fillStyle = 'white';
+                            ctx.fillRect(0, 0, img.width, img.height);
+                            ctx.drawImage(img, 0, 0);
+
+                            canvas.toBlob((blob) => {
+                                if (blob) {
+                                    const url = URL.createObjectURL(blob);
+                                    const link = document.createElement('a');
+                                    link.href = url;
+                                    link.download = filename;
+                                    document.body.appendChild(link);
+                                    link.click();
+                                    document.body.removeChild(link);
+                                    URL.revokeObjectURL(url);
+
+                                    this.log(`物理図PNGファイル出力完了: ${filename}`, 'success');
+                                } else {
+                                    throw new Error('Blobの生成に失敗しました');
+                                }
+                            }, 'image/png', 1.0);
+                        } catch (canvasError) {
+                            this.log('Canvas描画エラー: ' + canvasError.message, 'error');
+                            this.downloadSVG(svgElement, prefix);
+                            alert('PNG出力でエラーが発生したため、SVG形式でダウンロードしました。');
+                        }
+                    };
+
+                    img.onerror = () => {
+                        this.log('PNG変換エラー: SVG読み込み失敗', 'error');
+                        this.downloadSVG(svgElement, prefix);
+                        alert('PNG出力でエラーが発生したため、SVG形式でダウンロードしました。');
+                    };
+
+                    const encodedSvg = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgString)));
+                    img.src = encodedSvg;
+
+                } catch (error) {
+                    this.log('PNG出力エラー: ' + error.message, 'error');
+                    this.downloadSVG(svgElement, prefix);
+                    alert('PNG出力でエラーが発生したため、SVG形式でダウンロードしました。');
+                }
+            }
+        }
+
+        // 初期化
+        document.addEventListener('DOMContentLoaded', function() {
+            new PhysicsTikZCreator();
+        });
+    </script>
+</body>
+</html>
