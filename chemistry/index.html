@@ -3,23 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>物理問題管理</title>
-    
-    <!-- Bootstrap 5 CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Font Awesome -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    
+    <title>🔥 Chemistry Creator v5.1 - MOBILE OPTIMIZED LATEX SYSTEM - 2025-09-21</title>
+
+    <!-- KaTeX CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css" integrity="sha384-GvrOXuhMATgEsSwCs4smul74iXGOixntILdUW9XmUC6+HX0sLNAK3q71HotJqlAn" crossorigin="anonymous">
+
     <style>
         :root {
-            --primary-color: #3b82f6;
-            --secondary-color: #1e40af;
-            --success-color: #4CAF50;
-            --warning-color: #FF9800;
-            --text-dark: #333;
-            --text-muted: #666;
-            --bg-light: #eff6ff;
-            --border-light: #e9ecef;
+            --primary-color: #10b981;
+            --secondary-color: #047857;
+            --accent-color: #34d399;
+            --bg-color: #ecfdf5;
+            --text-color: #1f2937;
+            --border-color: #a7f3d0;
+            --hover-bg: #d1fae5;
+            --editor-bg: #f8fafc;
+            --preview-bg: #ffffff;
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+            --error-color: #ef4444;
         }
 
         body {
@@ -115,7 +117,7 @@
     <!-- Navigation -->
     <nav class="navbar navbar-expand-lg navbar-light fixed-top">
         <div class="container-fluid">
-            <a class="navbar-brand" href="#"><i class="fas fa-atom"></i> 物理問題管理</a>
+            <a class="navbar-brand" href="#"><i class="fas fa-flask"></i> 化学問題管理</a>
             
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
@@ -140,8 +142,8 @@
             <div class="container">
                 <div class="row align-items-center">
                     <div class="col-md-8">
-                        <h1><i class="fas fa-atom"></i> 物理問題管理</h1>
-                        <p>力学、電磁気学、熱力学、波動などの物理問題を作成・管理</p>
+                        <h1><i class="fas fa-flask"></i> 化学問題管理</h1>
+                        <p>無機化学、有機化学、物理化学の問題を作成・管理</p>
                     </div>
                 </div>
             </div>
@@ -152,23 +154,23 @@
             <div class="col-12">
                 <div class="card">
                     <div class="card-header">
-                        <h5 class="mb-0"><i class="fas fa-plus"></i> 新しい物理問題を作成</h5>
+                        <h5 class="mb-0"><i class="fas fa-plus"></i> 新しい化学問題を作成</h5>
                     </div>
                     <div class="card-body">
                         <form onsubmit="addProblem(event)">
                             <div class="row">
                                 <div class="col-md-6 mb-3">
                                     <label for="problemTitle" class="form-label">問題タイトル</label>
-                                    <input type="text" class="form-control" id="problemTitle" placeholder="例: 斜面での物体の運動" required>
+                                    <input type="text" class="form-control" id="problemTitle" placeholder="例: 酸塩基反応の化学式" required>
                                 </div>
                                 <div class="col-md-3 mb-3">
                                     <label for="problemCategory" class="form-label">分野</label>
                                     <select class="form-select" id="problemCategory">
-                                        <option value="mechanics">力学</option>
-                                        <option value="thermodynamics">熱力学</option>
-                                        <option value="electromagnetism">電磁気学</option>
-                                        <option value="waves">波動</option>
-                                        <option value="modern">現代物理</option>
+                                        <option value="inorganic">無機化学</option>
+                                        <option value="organic">有機化学</option>
+                                        <option value="physical">物理化学</option>
+                                        <option value="analytical">分析化学</option>
+                                        <option value="biochemistry">生化学</option>
                                     </select>
                                 </div>
                                 <div class="col-md-3 mb-3">
@@ -202,7 +204,7 @@
             <div class="col-12">
                 <div class="card">
                     <div class="card-header">
-                        <h5 class="mb-0"><i class="fas fa-list"></i> 物理問題一覧</h5>
+                        <h5 class="mb-0"><i class="fas fa-list"></i> 化学問題一覧</h5>
                     </div>
                     <div class="card-body" id="problemsList">
                         <p class="text-muted text-center">まだ問題が登録されていません。</p>
@@ -216,7 +218,7 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
-        let physicsProblems = JSON.parse(localStorage.getItem('physicsQuestions') || '[]');
+        let chemistryProblems = JSON.parse(localStorage.getItem('chemistryQuestions') || '[]');
 
         function addProblem(event) {
             event.preventDefault();
@@ -237,8 +239,8 @@
                 createdAt: new Date().toLocaleDateString('ja-JP')
             };
 
-            physicsProblems.push(problem);
-            localStorage.setItem('physicsQuestions', JSON.stringify(physicsProblems));
+            chemistryProblems.push(problem);
+            localStorage.setItem('chemistryQuestions', JSON.stringify(chemistryProblems));
 
             document.getElementById('problemTitle').value = '';
             document.getElementById('problemText').value = '';
@@ -250,7 +252,7 @@
             const alert = document.createElement('div');
             alert.className = 'alert alert-success alert-dismissible fade show';
             alert.innerHTML = `
-                <strong>成功!</strong> 問題が追加されました。
+                <strong>成功!</strong> 化学問題が追加されました。
                 <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
             `;
             document.querySelector('.container-fluid').insertBefore(alert, document.querySelector('.container-fluid').firstChild);
@@ -263,17 +265,17 @@
         function displayProblems() {
             const container = document.getElementById('problemsList');
             
-            if (physicsProblems.length === 0) {
+            if (chemistryProblems.length === 0) {
                 container.innerHTML = '<p class="text-muted text-center">まだ問題が登録されていません。</p>';
                 return;
             }
 
             const categoryNames = {
-                mechanics: '力学',
-                thermodynamics: '熱力学',
-                electromagnetism: '電磁気学',
-                waves: '波動',
-                modern: '現代物理'
+                inorganic: '無機化学',
+                organic: '有機化学',
+                physical: '物理化学',
+                analytical: '分析化学',
+                biochemistry: '生化学'
             };
 
             const difficultyNames = {
@@ -288,7 +290,7 @@
                 advanced: 'danger'
             };
 
-            container.innerHTML = physicsProblems.map(problem => `
+            container.innerHTML = chemistryProblems.map(problem => `
                 <div class="problem-item">
                     <div class="d-flex justify-content-between align-items-start mb-2">
                         <div class="problem-title">${problem.title}</div>

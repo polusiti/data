@@ -11,7 +11,12 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="Data Manager">
-    <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTkyIiBoZWlnaHQ9IjE5MiIgdmlld0JveD0iMCAwIDE5MiAxOTIiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIxOTIiIGhlaWdodD0iMTkyIiByeD0iMjQiIGZpbGw9IiMyMTk2RjMiLz4KPHN2ZyB4PSI0OCIgeT0iNDgiIHdpZHRoPSI5NiIgaGVpZ2h0PSI5NiIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJ3aGl0ZSI+CjxwYXRoIGQ9Ik0xNCAySDZhMiAyIDAgMCAwLTIgMnYxNmEyIDIgMCAwIDAgMiAyaDEyYTIgMiAwIDAgMCAyLTJWOGwtNi02ek0xNiAxOEg4di0yaDh2MnptMC00SDh2LTJoOHYyem0tMy04VjMuNUwxOC41IDlIMTN6Ii8+Cjwvc3ZnPgo8L3N2Zz4=">
+    <link rel="apple-touch-icon" href="https://pub-d59d6e46c3154423956f648f8df909ae.r2.dev/0b993a1b-c8cd-41ef-94a5-946590a14fac.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="https://pub-d59d6e46c3154423956f648f8df909ae.r2.dev/0b993a1b-c8cd-41ef-94a5-946590a14fac.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="https://pub-d59d6e46c3154423956f648f8df909ae.r2.dev/0b993a1b-c8cd-41ef-94a5-946590a14fac.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="https://pub-d59d6e46c3154423956f648f8df909ae.r2.dev/0b993a1b-c8cd-41ef-94a5-946590a14fac.png">
+    <meta name="msapplication-TileColor" content="#2196F3">
+    <meta name="msapplication-TileImage" href="https://pub-d59d6e46c3154423956f648f8df909ae.r2.dev/0b993a1b-c8cd-41ef-94a5-946590a14fac.png">
 
     <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -366,21 +371,26 @@
                     </a>
                 </div>
                 <div class="col-6 col-md-3">
-                    <a href="english/" class="action-btn">
-                        <div class="icon bg-warning text-white">
-                            <i class="fas fa-language"></i>
+                    <a href="math/" class="action-btn">
+                        <i class="fas fa-calculator"></i>
+                        <div>
+                            <div class="action-title">数学</div>
+                            <div class="action-desc">数式とグラフ</div>
                         </div>
-                        <div class="title">英語</div>
-                        <div class="desc">英語問題を探す</div>
                     </a>
-                </div>
-                <div class="col-6 col-md-3">
-                    <a href="sci/" class="action-btn">
-                        <div class="icon bg-info text-white">
-                            <i class="fas fa-atom"></i>
+                    <a href="physics/" class="action-btn">
+                        <i class="fas fa-atom"></i>
+                        <div>
+                            <div class="action-title">物理</div>
+                            <div class="action-desc">力学と電磁気</div>
                         </div>
-                        <div class="title">理科</div>
-                        <div class="desc">理科問題を探す</div>
+                    </a>
+                    <a href="chemistry/" class="action-btn">
+                        <i class="fas fa-flask"></i>
+                        <div>
+                            <div class="action-title">化学</div>
+                            <div class="action-desc">分子と反応</div>
+                        </div>
                     </a>
                 </div>
             </div>
@@ -501,8 +511,8 @@
                             <select class="form-select" id="subject" required>
                                 <option value="">選択してください</option>
                                 <option value="math">数学</option>
-                                <option value="english">英語</option>
-                                <option value="science">理科</option>
+                                <option value="english">物理</option>
+                                <option value="science">化学</option>
                                 <option value="general">その他</option>
                             </select>
                         </div>
@@ -661,9 +671,9 @@
                         {
                             id: 2,
                             subject: 'english',
-                            title: 'Choose the correct preposition: She is good ___ mathematics.',
-                            difficulty: 2,
-                            author: 'english_pro',
+                            title: '斜方投射における最高点の高さを求める問題',
+                            difficulty: 4,
+                            author: 'physics_teacher',
                             createdAt: '4時間前',
                             views: 78,
                             solved: 34
@@ -671,9 +681,9 @@
                         {
                             id: 3,
                             subject: 'science',
-                            title: '光合成の化学反応式を書いて、反応過程を説明しなさい',
-                            difficulty: 4,
-                            author: 'bio_sensei',
+                            title: '化学反応式のバランス調整と反応量計算',
+                            difficulty: 3,
+                            author: 'chem_sensei',
                             createdAt: '6時間前',
                             views: 23,
                             solved: 8
@@ -732,8 +742,8 @@
             getSubjectName(subject) {
                 const subjects = {
                     'math': '数学',
-                    'english': '英語',
-                    'science': '理科',
+                    'english': '物理',
+                    'science': '化学',
                     'general': 'その他'
                 };
                 return subjects[subject] || 'その他';
@@ -970,8 +980,8 @@
             // Create a simple overview page or redirect to a search page
             const subjects = [
                 { name: '数学', path: 'math/', icon: 'fas fa-calculator' },
-                { name: '英語', path: 'english/', icon: 'fas fa-language' },
-                { name: '理科', path: 'sci/', icon: 'fas fa-atom' }
+                { name: '物理', path: 'physics/', icon: 'fas fa-atom' },
+                { name: '化学', path: 'chemistry/', icon: 'fas fa-flask' }
             ];
             
             let message = '科目を選択してください:\n\n';

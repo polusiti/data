@@ -8,16 +8,108 @@
   "theme_color": "#2196F3",
   "orientation": "portrait-primary",
   "scope": "/",
+  "prefer_related_applications": false,
+  "display_override": ["window-controls-overlay"],
+  "shortcuts": [
+    {
+      "name": "数学問題作成",
+      "short_name": "数学",
+      "description": "数学の問題を作成する",
+      "url": "/math/",
+      "icons": [{ "src": "https://pub-d59d6e46c3154423956f648f8df909ae.r2.dev/0b993a1b-c8cd-41ef-94a5-946590a14fac.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "物理問題作成",
+      "short_name": "物理",
+      "description": "物理の問題を作成する",
+      "url": "/physics/",
+      "icons": [{ "src": "https://pub-d59d6e46c3154423956f648f8df909ae.r2.dev/0b993a1b-c8cd-41ef-94a5-946590a14fac.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "化学問題作成",
+      "short_name": "化学",
+      "description": "化学の問題を作成する",
+      "url": "/chemistry/",
+      "icons": [{ "src": "https://pub-d59d6e46c3154423956f648f8df909ae.r2.dev/0b993a1b-c8cd-41ef-94a5-946590a14fac.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "問題検索",
+      "short_name": "検索",
+      "description": "問題を検索する",
+      "url": "/search.html",
+      "icons": [{ "src": "https://pub-d59d6e46c3154423956f648f8df909ae.r2.dev/0b993a1b-c8cd-41ef-94a5-946590a14fac.png", "sizes": "192x192" }]
+    }
+  ],
   "icons": [
     {
       "src": "https://pub-d59d6e46c3154423956f648f8df909ae.r2.dev/0b993a1b-c8cd-41ef-94a5-946590a14fac.png",
       "sizes": "192x192",
-      "type": "image/svg+xml"
+      "type": "image/png"
     },
     {
       "src": "https://pub-d59d6e46c3154423956f648f8df909ae.r2.dev/0b993a1b-c8cd-41ef-94a5-946590a14fac.png",
       "sizes": "512x512",
-      "type": "image/svg+xml"
+      "type": "image/png"
+    },
+    {
+      "src": "https://pub-d59d6e46c3154423956f648f8df909ae.r2.dev/0b993a1b-c8cd-41ef-94a5-946590a14fac.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    },
+    {
+      "src": "https://pub-d59d6e46c3154423956f648f8df909ae.r2.dev/0b993a1b-c8cd-41ef-94a5-946590a14fac.png",
+      "sizes": "152x152",
+      "type": "image/png"
+    },
+    {
+      "src": "https://pub-d59d6e46c3154423956f648f8df909ae.r2.dev/0b993a1b-c8cd-41ef-94a5-946590a14fac.png",
+      "sizes": "144x144",
+      "type": "image/png"
+    },
+    {
+      "src": "https://pub-d59d6e46c3154423956f648f8df909ae.r2.dev/0b993a1b-c8cd-41ef-94a5-946590a14fac.png",
+      "sizes": "120x120",
+      "type": "image/png"
+    },
+    {
+      "src": "https://pub-d59d6e46c3154423956f648f8df909ae.r2.dev/0b993a1b-c8cd-41ef-94a5-946590a14fac.png",
+      "sizes": "114x114",
+      "type": "image/png"
+    },
+    {
+      "src": "https://pub-d59d6e46c3154423956f648f8df909ae.r2.dev/0b993a1b-c8cd-41ef-94a5-946590a14fac.png",
+      "sizes": "76x76",
+      "type": "image/png"
+    },
+    {
+      "src": "https://pub-d59d6e46c3154423956f648f8df909ae.r2.dev/0b993a1b-c8cd-41ef-94a5-946590a14fac.png",
+      "sizes": "72x72",
+      "type": "image/png"
+    },
+    {
+      "src": "https://pub-d59d6e46c3154423956f648f8df909ae.r2.dev/0b993a1b-c8cd-41ef-94a5-946590a14fac.png",
+      "sizes": "60x60",
+      "type": "image/png"
+    },
+    {
+      "src": "https://pub-d59d6e46c3154423956f648f8df909ae.r2.dev/0b993a1b-c8cd-41ef-94a5-946590a14fac.png",
+      "sizes": "57x57",
+      "type": "image/png"
+    },
+    {
+      "src": "https://pub-d59d6e46c3154423956f648f8df909ae.r2.dev/0b993a1b-c8cd-41ef-94a5-946590a14fac.png",
+      "sizes": "48x48",
+      "type": "image/png"
+    },
+    {
+      "src": "https://pub-d59d6e46c3154423956f648f8df909ae.r2.dev/0b993a1b-c8cd-41ef-94a5-946590a14fac.png",
+      "sizes": "32x32",
+      "type": "image/png"
+    },
+    {
+      "src": "https://pub-d59d6e46c3154423956f648f8df909ae.r2.dev/0b993a1b-c8cd-41ef-94a5-946590a14fac.png",
+      "sizes": "16x16",
+      "type": "image/png"
     }
   ],
   "categories": ["education", "productivity", "utilities"],
