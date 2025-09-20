@@ -1251,15 +1251,21 @@ x^2 + 2x + 1 = 0
                 }
                 
                 try {
+                    // displaystyle を自動追加
+                    let processedText = text;
+                    if (!text.includes('\\displaystyle') && !text.includes('\\textstyle')) {
+                        processedText = '\\displaystyle ' + text;
+                    }
+
                     // インライン数式かブロック数式かを判定
                     const isDisplayMode = text.includes('\\\\') || text.includes('\\begin') || text.length > 30;
-                    
-                    const rendered = window.katex.renderToString(text, {
+
+                    const rendered = window.katex.renderToString(processedText, {
                         throwOnError: false,
                         displayMode: isDisplayMode,
                         strict: false
                     });
-                    
+
                     this.preview.innerHTML = rendered;
                     this.addStatus('✅ レンダリング完了', 'success');
                 } catch (error) {
@@ -1274,7 +1280,11 @@ x^2 + 2x + 1 = 0
                     const latex = btn.innerHTML;
                     if (latex.includes('$')) {
                         try {
-                            const mathExpr = latex.replace(/\$/g, '');
+                            let mathExpr = latex.replace(/\$/g, '');
+                            // displaystyle を自動追加（ボタン表示用）
+                            if (!mathExpr.includes('\\displaystyle') && !mathExpr.includes('\\textstyle')) {
+                                mathExpr = '\\displaystyle ' + mathExpr;
+                            }
                             const rendered = window.katex.renderToString(mathExpr, {
                                 throwOnError: false,
                                 displayMode: false
