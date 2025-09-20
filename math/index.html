@@ -675,30 +675,160 @@
 
                 <!-- LaTeX ツールバー -->
                 <div class="latex-toolbar" id="latexToolbar">
+                    <!-- 基本演算 -->
                     <button class="latex-btn" data-latex="\frac{}{}" title="分数">$\frac{a}{b}$</button>
                     <button class="latex-btn" data-latex="\sqrt{}" title="平方根">$\sqrt{x}$</button>
+                    <button class="latex-btn" data-latex="\sqrt[3]{}" title="立方根">$\sqrt[3]{x}$</button>
+                    <button class="latex-btn" data-latex="\sqrt[n]{}" title="n乗根">$\sqrt[n]{x}$</button>
                     <button class="latex-btn" data-latex="^{}" title="べき乗">$x^{n}$</button>
                     <button class="latex-btn" data-latex="_{}" title="下付き">$x_{i}$</button>
-                    <button class="latex-btn" data-latex="\sum" title="総和">$\sum$</button>
+
+                    <!-- 総和・積分・極限 -->
+                    <button class="latex-btn" data-latex="\sum_{i=1}^{n}" title="総和">$\sum_{i=1}^{n}$</button>
+                    <button class="latex-btn" data-latex="\prod_{i=1}^{n}" title="総積">$\prod_{i=1}^{n}$</button>
                     <button class="latex-btn" data-latex="\int" title="積分">$\int$</button>
-                    <button class="latex-btn" data-latex="\lim" title="極限">$\lim$</button>
+                    <button class="latex-btn" data-latex="\int_{a}^{b}" title="定積分">$\int_{a}^{b}$</button>
+                    <button class="latex-btn" data-latex="\iint" title="重積分">$\iint$</button>
+                    <button class="latex-btn" data-latex="\oint" title="線積分">$\oint$</button>
+                    <button class="latex-btn" data-latex="\lim_{x \to a}" title="極限">$\lim_{x \to a}$</button>
+                    <button class="latex-btn" data-latex="\lim_{n \to \infty}" title="無限極限">$\lim_{n \to \infty}$</button>
+
+                    <!-- 三角関数 -->
                     <button class="latex-btn" data-latex="\sin" title="正弦">$\sin$</button>
                     <button class="latex-btn" data-latex="\cos" title="余弦">$\cos$</button>
                     <button class="latex-btn" data-latex="\tan" title="正接">$\tan$</button>
+                    <button class="latex-btn" data-latex="\sec" title="正割">$\sec$</button>
+                    <button class="latex-btn" data-latex="\csc" title="余割">$\csc$</button>
+                    <button class="latex-btn" data-latex="\cot" title="余接">$\cot$</button>
+                    <button class="latex-btn" data-latex="\arcsin" title="逆正弦">$\arcsin$</button>
+                    <button class="latex-btn" data-latex="\arccos" title="逆余弦">$\arccos$</button>
+                    <button class="latex-btn" data-latex="\arctan" title="逆正接">$\arctan$</button>
+
+                    <!-- 対数・指数 -->
                     <button class="latex-btn" data-latex="\log" title="対数">$\log$</button>
-                    <button class="latex-btn" data-latex="\pi" title="パイ">$\pi$</button>
-                    <button class="latex-btn" data-latex="\alpha" title="アルファ">$\alpha$</button>
-                    <button class="latex-btn" data-latex="\beta" title="ベータ">$\beta$</button>
+                    <button class="latex-btn" data-latex="\ln" title="自然対数">$\ln$</button>
+                    <button class="latex-btn" data-latex="\log_{a}" title="底a対数">$\log_{a}$</button>
+                    <button class="latex-btn" data-latex="e^{}" title="指数関数">$e^{x}$</button>
+                    <button class="latex-btn" data-latex="a^{}" title="べき乗">$a^{x}$</button>
+
+                    <!-- 微分 -->
+                    <button class="latex-btn" data-latex="\frac{d}{dx}" title="微分">$\frac{d}{dx}$</button>
+                    <button class="latex-btn" data-latex="\frac{dy}{dx}" title="導関数">$\frac{dy}{dx}$</button>
+                    <button class="latex-btn" data-latex="\frac{d^2}{dx^2}" title="二階微分">$\frac{d^2}{dx^2}$</button>
+                    <button class="latex-btn" data-latex="\frac{\partial}{\partial x}" title="偏微分">$\frac{\partial}{\partial x}$</button>
+                    <button class="latex-btn" data-latex="\nabla" title="ナブラ">$\nabla$</button>
+
+                    <!-- 行列・ベクトル -->
+                    <button class="latex-btn" data-latex="\begin{pmatrix} a & b \\ c & d \end{pmatrix}" title="行列">$\begin{pmatrix} a & b \\ c & d \end{pmatrix}$</button>
+                    <button class="latex-btn" data-latex="\begin{bmatrix} a & b \\ c & d \end{bmatrix}" title="角括弧行列">$\begin{bmatrix} a & b \\ c & d \end{bmatrix}$</button>
+                    <button class="latex-btn" data-latex="\begin{vmatrix} a & b \\ c & d \end{vmatrix}" title="行列式">$\begin{vmatrix} a & b \\ c & d \end{vmatrix}$</button>
+                    <button class="latex-btn" data-latex="\vec{v}" title="ベクトル">$\vec{v}$</button>
+                    <button class="latex-btn" data-latex="\overrightarrow{AB}" title="矢印ベクトル">$\overrightarrow{AB}$</button>
+
+                    <!-- 集合論 -->
+                    <button class="latex-btn" data-latex="\in" title="属する">$\in$</button>
+                    <button class="latex-btn" data-latex="\notin" title="属さない">$\notin$</button>
+                    <button class="latex-btn" data-latex="\subset" title="部分集合">$\subset$</button>
+                    <button class="latex-btn" data-latex="\supset" title="上位集合">$\supset$</button>
+                    <button class="latex-btn" data-latex="\cup" title="和集合">$\cup$</button>
+                    <button class="latex-btn" data-latex="\cap" title="積集合">$\cap$</button>
+                    <button class="latex-btn" data-latex="\emptyset" title="空集合">$\emptyset$</button>
+                    <button class="latex-btn" data-latex="\forall" title="すべての">$\forall$</button>
+                    <button class="latex-btn" data-latex="\exists" title="存在する">$\exists$</button>
+
+                    <!-- 論理記号 -->
+                    <button class="latex-btn" data-latex="\land" title="論理積">$\land$</button>
+                    <button class="latex-btn" data-latex="\lor" title="論理和">$\lor$</button>
+                    <button class="latex-btn" data-latex="\neg" title="否定">$\neg$</button>
+                    <button class="latex-btn" data-latex="\Rightarrow" title="ならば">$\Rightarrow$</button>
+                    <button class="latex-btn" data-latex="\Leftrightarrow" title="同値">$\Leftrightarrow$</button>
+
+                    <!-- 不等号・関係 -->
                     <button class="latex-btn" data-latex="\leq" title="以下">$\leq$</button>
                     <button class="latex-btn" data-latex="\geq" title="以上">$\geq$</button>
                     <button class="latex-btn" data-latex="\neq" title="不等">$\neq$</button>
+                    <button class="latex-btn" data-latex="\approx" title="約等号">$\approx$</button>
+                    <button class="latex-btn" data-latex="\equiv" title="合同">$\equiv$</button>
+                    <button class="latex-btn" data-latex="\sim" title="相似">$\sim$</button>
+                    <button class="latex-btn" data-latex="\propto" title="比例">$\propto$</button>
+
+                    <!-- 演算記号 -->
                     <button class="latex-btn" data-latex="\pm" title="±">$\pm$</button>
+                    <button class="latex-btn" data-latex="\mp" title="∓">$\mp$</button>
                     <button class="latex-btn" data-latex="\times" title="×">$\times$</button>
                     <button class="latex-btn" data-latex="\div" title="÷">$\div$</button>
                     <button class="latex-btn" data-latex="\cdot" title="·">$\cdot$</button>
-                    <button class="latex-btn" data-latex="\infty" title="∞">$\infty$</button>
-                    <button class="latex-btn" data-latex="\theta" title="θ">$\theta$</button>
-                    <button class="latex-btn" data-latex="\Delta" title="Δ">$\Delta$</button>
+                    <button class="latex-btn" data-latex="\ast" title="*">$\ast$</button>
+                    <button class="latex-btn" data-latex="\circ" title="○">$\circ$</button>
+
+                    <!-- ギリシャ文字 -->
+                    <button class="latex-btn" data-latex="\alpha" title="アルファ">$\alpha$</button>
+                    <button class="latex-btn" data-latex="\beta" title="ベータ">$\beta$</button>
+                    <button class="latex-btn" data-latex="\gamma" title="ガンマ">$\gamma$</button>
+                    <button class="latex-btn" data-latex="\delta" title="デルタ">$\delta$</button>
+                    <button class="latex-btn" data-latex="\epsilon" title="イプシロン">$\epsilon$</button>
+                    <button class="latex-btn" data-latex="\zeta" title="ゼータ">$\zeta$</button>
+                    <button class="latex-btn" data-latex="\eta" title="イータ">$\eta$</button>
+                    <button class="latex-btn" data-latex="\theta" title="シータ">$\theta$</button>
+                    <button class="latex-btn" data-latex="\lambda" title="ラムダ">$\lambda$</button>
+                    <button class="latex-btn" data-latex="\mu" title="ミュー">$\mu$</button>
+                    <button class="latex-btn" data-latex="\nu" title="ニュー">$\nu$</button>
+                    <button class="latex-btn" data-latex="\xi" title="クサイ">$\xi$</button>
+                    <button class="latex-btn" data-latex="\pi" title="パイ">$\pi$</button>
+                    <button class="latex-btn" data-latex="\rho" title="ロー">$\rho$</button>
+                    <button class="latex-btn" data-latex="\sigma" title="シグマ">$\sigma$</button>
+                    <button class="latex-btn" data-latex="\tau" title="タウ">$\tau$</button>
+                    <button class="latex-btn" data-latex="\phi" title="ファイ">$\phi$</button>
+                    <button class="latex-btn" data-latex="\chi" title="カイ">$\chi$</button>
+                    <button class="latex-btn" data-latex="\psi" title="プサイ">$\psi$</button>
+                    <button class="latex-btn" data-latex="\omega" title="オメガ">$\omega$</button>
+
+                    <!-- 大文字ギリシャ文字 -->
+                    <button class="latex-btn" data-latex="\Gamma" title="大ガンマ">$\Gamma$</button>
+                    <button class="latex-btn" data-latex="\Delta" title="大デルタ">$\Delta$</button>
+                    <button class="latex-btn" data-latex="\Theta" title="大シータ">$\Theta$</button>
+                    <button class="latex-btn" data-latex="\Lambda" title="大ラムダ">$\Lambda$</button>
+                    <button class="latex-btn" data-latex="\Xi" title="大クサイ">$\Xi$</button>
+                    <button class="latex-btn" data-latex="\Pi" title="大パイ">$\Pi$</button>
+                    <button class="latex-btn" data-latex="\Sigma" title="大シグマ">$\Sigma$</button>
+                    <button class="latex-btn" data-latex="\Phi" title="大ファイ">$\Phi$</button>
+                    <button class="latex-btn" data-latex="\Psi" title="大プサイ">$\Psi$</button>
+                    <button class="latex-btn" data-latex="\Omega" title="大オメガ">$\Omega$</button>
+
+                    <!-- 特殊記号 -->
+                    <button class="latex-btn" data-latex="\infty" title="無限大">$\infty$</button>
+                    <button class="latex-btn" data-latex="\partial" title="偏微分記号">$\partial$</button>
+                    <button class="latex-btn" data-latex="\hbar" title="プランク定数">$\hbar$</button>
+                    <button class="latex-btn" data-latex="\ell" title="エル">$\ell$</button>
+                    <button class="latex-btn" data-latex="\Re" title="実部">$\Re$</button>
+                    <button class="latex-btn" data-latex="\Im" title="虚部">$\Im$</button>
+                    <button class="latex-btn" data-latex="\aleph" title="アレフ">$\aleph$</button>
+
+                    <!-- 括弧類 -->
+                    <button class="latex-btn" data-latex="\left( \right)" title="大括弧">$\left( \right)$</button>
+                    <button class="latex-btn" data-latex="\left[ \right]" title="角括弧">$\left[ \right]$</button>
+                    <button class="latex-btn" data-latex="\left\{ \right\}" title="波括弧">$\left\{ \right\}$</button>
+                    <button class="latex-btn" data-latex="\left| \right|" title="絶対値">$\left| \right|$</button>
+                    <button class="latex-btn" data-latex="\left\| \right\|" title="ノルム">$\left\| \right\|$</button>
+                    <button class="latex-btn" data-latex="\langle \rangle" title="内積">$\langle \rangle$</button>
+
+                    <!-- 複素数・確率 -->
+                    <button class="latex-btn" data-latex="i" title="虚数単位">$i$</button>
+                    <button class="latex-btn" data-latex="\mathbb{R}" title="実数">$\mathbb{R}$</button>
+                    <button class="latex-btn" data-latex="\mathbb{C}" title="複素数">$\mathbb{C}$</button>
+                    <button class="latex-btn" data-latex="\mathbb{N}" title="自然数">$\mathbb{N}$</button>
+                    <button class="latex-btn" data-latex="\mathbb{Z}" title="整数">$\mathbb{Z}$</button>
+                    <button class="latex-btn" data-latex="\mathbb{Q}" title="有理数">$\mathbb{Q}$</button>
+                    <button class="latex-btn" data-latex="P(A)" title="確率">$P(A)$</button>
+                    <button class="latex-btn" data-latex="E[X]" title="期待値">$E[X]$</button>
+                    <button class="latex-btn" data-latex="\text{Var}(X)" title="分散">$\text{Var}(X)$</button>
+
+                    <!-- 統計・分布 -->
+                    <button class="latex-btn" data-latex="\binom{n}{k}" title="二項係数">$\binom{n}{k}$</button>
+                    <button class="latex-btn" data-latex="n!" title="階乗">$n!$</button>
+                    <button class="latex-btn" data-latex="\bar{x}" title="平均">$\bar{x}$</button>
+                    <button class="latex-btn" data-latex="\hat{x}" title="推定値">$\hat{x}$</button>
+                    <button class="latex-btn" data-latex="\tilde{x}" title="チルダ">$\tilde{x}$</button>
                 </div>
 
                 <!-- 入力エリア -->
@@ -767,12 +897,84 @@ x^2 + 2x + 1 = 0
                     
                     <!-- サンプル数式 -->
                     <div class="sample-chips">
-                        <div class="sample-chip" data-sample="x^2 + 2x + 1">二次方程式</div>
-                        <div class="sample-chip" data-sample="\frac{a + b}{2}">平均</div>
-                        <div class="sample-chip" data-sample="\sqrt{x^2 + y^2}">距離</div>
-                        <div class="sample-chip" data-sample="\int_0^1 x dx">定積分</div>
-                        <div class="sample-chip" data-sample="\lim_{x \to 0} \frac{\sin x}{x}">極限</div>
-                        <div class="sample-chip" data-sample="\begin{pmatrix} a & b \\ c & d \end{pmatrix}">行列</div>
+                        <!-- 基本数式 -->
+                        <div class="sample-chip" data-sample="x^2 + 2x + 1 = 0">二次方程式</div>
+                        <div class="sample-chip" data-sample="ax^2 + bx + c = 0">一般二次方程式</div>
+                        <div class="sample-chip" data-sample="x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}">解の公式</div>
+                        <div class="sample-chip" data-sample="\frac{a + b}{2}">相加平均</div>
+                        <div class="sample-chip" data-sample="\sqrt{x^2 + y^2}">距離の公式</div>
+                        <div class="sample-chip" data-sample="y = ax + b">一次関数</div>
+
+                        <!-- 三角関数 -->
+                        <div class="sample-chip" data-sample="\sin^2\theta + \cos^2\theta = 1">三角関数基本公式</div>
+                        <div class="sample-chip" data-sample="\sin(A + B) = \sin A \cos B + \cos A \sin B">加法定理</div>
+                        <div class="sample-chip" data-sample="y = A\sin(Bx + C) + D">正弦関数</div>
+                        <div class="sample-chip" data-sample="\tan\theta = \frac{\sin\theta}{\cos\theta}">正接の定義</div>
+
+                        <!-- 指数・対数 -->
+                        <div class="sample-chip" data-sample="a^x \cdot a^y = a^{x+y}">指数法則</div>
+                        <div class="sample-chip" data-sample="\log_a(xy) = \log_a x + \log_a y">対数法則</div>
+                        <div class="sample-chip" data-sample="e^{i\pi} + 1 = 0">オイラーの等式</div>
+                        <div class="sample-chip" data-sample="y = ae^{bx}">指数関数</div>
+
+                        <!-- 微分積分 -->
+                        <div class="sample-chip" data-sample="\int_0^1 x dx = \frac{1}{2}">定積分</div>
+                        <div class="sample-chip" data-sample="\frac{d}{dx}(x^n) = nx^{n-1}">べき乗の微分</div>
+                        <div class="sample-chip" data-sample="\lim_{x \to 0} \frac{\sin x}{x} = 1">重要極限</div>
+                        <div class="sample-chip" data-sample="\int x^n dx = \frac{x^{n+1}}{n+1} + C">べき乗の積分</div>
+                        <div class="sample-chip" data-sample="\frac{d}{dx}(\sin x) = \cos x">正弦の微分</div>
+                        <div class="sample-chip" data-sample="\int e^x dx = e^x + C">指数関数の積分</div>
+
+                        <!-- 複素数 -->
+                        <div class="sample-chip" data-sample="z = a + bi">複素数</div>
+                        <div class="sample-chip" data-sample="|z| = \sqrt{a^2 + b^2}">複素数の絶対値</div>
+                        <div class="sample-chip" data-sample="z = re^{i\theta}">極形式</div>
+
+                        <!-- 行列 -->
+                        <div class="sample-chip" data-sample="\begin{pmatrix} a & b \\ c & d \end{pmatrix}">2×2行列</div>
+                        <div class="sample-chip" data-sample="\begin{vmatrix} a & b \\ c & d \end{vmatrix} = ad - bc">行列式</div>
+                        <div class="sample-chip" data-sample="A^{-1} = \frac{1}{\det(A)}\begin{pmatrix} d & -b \\ -c & a \end{pmatrix}">逆行列</div>
+
+                        <!-- ベクトル -->
+                        <div class="sample-chip" data-sample="\vec{a} \cdot \vec{b} = |\vec{a}||\vec{b}|\cos\theta">内積</div>
+                        <div class="sample-chip" data-sample="|\vec{a} \times \vec{b}| = |\vec{a}||\vec{b}|\sin\theta">外積</div>
+                        <div class="sample-chip" data-sample="\vec{AB} = B - A">位置ベクトル</div>
+
+                        <!-- 確率統計 -->
+                        <div class="sample-chip" data-sample="P(A \cup B) = P(A) + P(B) - P(A \cap B)">和事象</div>
+                        <div class="sample-chip" data-sample="P(A|B) = \frac{P(A \cap B)}{P(B)}">条件付き確率</div>
+                        <div class="sample-chip" data-sample="E[X] = \sum x_i P(X = x_i)">期待値</div>
+                        <div class="sample-chip" data-sample="\text{Var}(X) = E[X^2] - (E[X])^2">分散</div>
+                        <div class="sample-chip" data-sample="\binom{n}{k} = \frac{n!}{k!(n-k)!}">組み合わせ</div>
+
+                        <!-- 数列 -->
+                        <div class="sample-chip" data-sample="a_n = a_1 + (n-1)d">等差数列</div>
+                        <div class="sample-chip" data-sample="a_n = a_1 \cdot r^{n-1}">等比数列</div>
+                        <div class="sample-chip" data-sample="S_n = \frac{n(a_1 + a_n)}{2}">等差数列の和</div>
+                        <div class="sample-chip" data-sample="S_n = \frac{a_1(1-r^n)}{1-r}">等比数列の和</div>
+
+                        <!-- 図形 -->
+                        <div class="sample-chip" data-sample="S = \pi r^2">円の面積</div>
+                        <div class="sample-chip" data-sample="V = \frac{4}{3}\pi r^3">球の体積</div>
+                        <div class="sample-chip" data-sample="c^2 = a^2 + b^2">ピタゴラスの定理</div>
+                        <div class="sample-chip" data-sample="S = \frac{1}{2}ab\sin C">三角形の面積</div>
+
+                        <!-- 集合論 -->
+                        <div class="sample-chip" data-sample="A \cup B">和集合</div>
+                        <div class="sample-chip" data-sample="A \cap B">積集合</div>
+                        <div class="sample-chip" data-sample="A \subset B">部分集合</div>
+                        <div class="sample-chip" data-sample="|A \cup B| = |A| + |B| - |A \cap B|">包除原理</div>
+
+                        <!-- 論理 -->
+                        <div class="sample-chip" data-sample="P \Rightarrow Q">含意</div>
+                        <div class="sample-chip" data-sample="P \Leftrightarrow Q">同値</div>
+                        <div class="sample-chip" data-sample="\forall x \in \mathbb{R}">全称量化</div>
+                        <div class="sample-chip" data-sample="\exists x \in \mathbb{N}">存在量化</div>
+
+                        <!-- 特殊関数 -->
+                        <div class="sample-chip" data-sample="\Gamma(n) = (n-1)!">ガンマ関数</div>
+                        <div class="sample-chip" data-sample="B(x,y) = \int_0^1 t^{x-1}(1-t)^{y-1}dt">ベータ関数</div>
+                        <div class="sample-chip" data-sample="\zeta(s) = \sum_{n=1}^{\infty} \frac{1}{n^s}">リーマンゼータ関数</div>
                     </div>
 
                     <!-- 状態表示 -->
