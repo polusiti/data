@@ -581,6 +581,8 @@
 
     <!-- Authentication Client -->
     <script src="auth-d1-client.js"></script>
+    <!-- D1 Client -->
+    <script src="questa-d1-client.js"></script>
 
     <script>
         // Load problems from all available sources
@@ -796,8 +798,13 @@
             }
 
             // Re-render MathJax
-            if (window.MathJax) {
-                MathJax.typesetPromise([container]);
+            if (window.MathJax && window.MathJax.typesetPromise) {
+                MathJax.typesetPromise([container]).catch(err => {
+                    console.warn('MathJax rendering failed:', err);
+                });
+            } else if (window.MathJax && window.MathJax.Hub) {
+                // Fallback for older MathJax versions
+                MathJax.Hub.Queue(["Typeset", MathJax.Hub, container]);
             }
         }
 
@@ -1057,8 +1064,13 @@
 
             // Re-render MathJax for the modal content
             setTimeout(() => {
-                if (window.MathJax) {
-                    MathJax.typesetPromise([document.getElementById('problemModal')]);
+                if (window.MathJax && window.MathJax.typesetPromise) {
+                    MathJax.typesetPromise([document.getElementById('problemModal')]).catch(err => {
+                        console.warn('MathJax modal rendering failed:', err);
+                    });
+                } else if (window.MathJax && window.MathJax.Hub) {
+                    // Fallback for older MathJax versions
+                    MathJax.Hub.Queue(["Typeset", MathJax.Hub, document.getElementById('problemModal')]);
                 }
             }, 100);
         }
@@ -1086,19 +1098,33 @@
         // Enhanced D1-integrated comment system
         async function loadComments(problemId) {
             try {
-                // Try to load from D1 first
-                const d1Result = await window.questaD1.getCommentsByProblem(problemId);
-
-                if (d1Result.success) {
-                    displayComments(d1Result.comments);
-                    updateCommentCount(d1Result.comments.length);
-                    console.log('✅ Comments loaded from D1:', d1Result.comments.length);
-                } else {
-                    console.warn('⚠️ D1 load failed, falling back to localStorage:', d1Result.error);
-                    loadCommentsFromLocalStorage(problemId);
+                // Ensure D1 client is available
+                if (!window.questaD1 && typeof QuestaD1Client !== 'undefined') {
+                    console.log('⚠️ D1 client not available, creating new instance');
+                    window.questaD1 = new QuestaD1Client();
                 }
+
+                // Try to load from D1 first if available
+                if (window.questaD1 && typeof window.questaD1.getCommentsByProblem === 'function') {
+                    const d1Result = await window.questaD1.getCommentsByProblem(problemId);
+
+                    if (d1Result.success) {
+                        displayComments(d1Result.comments);
+                        updateCommentCount(d1Result.comments.length);
+                        console.log('✅ Comments loaded from D1:', d1Result.comments.length);
+                        return;
+                    } else {
+                        console.warn('⚠️ D1 load failed, falling back to localStorage:', d1Result.error);
+                    }
+                } else {
+                    console.warn('⚠️ D1 client not available, using localStorage');
+                }
+
+                // Fallback to localStorage
+                loadCommentsFromLocalStorage(problemId);
             } catch (error) {
                 console.error('❌ Comment loading error:', error);
+                console.warn('⚠️ Falling back to localStorage due to D1 error');
                 loadCommentsFromLocalStorage(problemId);
             }
         }
@@ -1132,14 +1158,35 @@
         }
 
         function renderEnhancedComment(comment) {
-            const date = new Date(comment.created_at).toLocaleString();
+            // Safely format date
+            let date;
+            try {
+                date = new Date(comment.created_at || comment.createdAt).toLocaleString();
+                if (date === 'Invalid Date') {
+                    date = '日時不明';
+                }
+            } catch (e) {
+                date = '日時不明';
+            }
+
             const mediaHtml = renderCommentMedia(comment.media_urls || []);
+
+            // Debug info for development
+            console.log('Rendering comment:', {
+                id: comment.id,
+                user_id: comment.user_id,
+                authorId: comment.authorId,
+                author: comment.author,
+                author_name: comment.author_name,
+                created_at: comment.created_at,
+                createdAt: comment.createdAt
+            });
 
             return `
                 <div class="comment-item" data-comment-id="${comment.id}">
                     <div class="comment-header">
                         <span class="comment-author">
-                            <i class="fas fa-user-circle"></i> ${comment.author_name || comment.author}
+                            <i class="fas fa-user-circle"></i> ${comment.author_name || comment.author || 'Anonymous'}
                             ${comment.author_inquiry_number ? `<small class="text-muted">(${comment.author_inquiry_number})</small>` : ''}
                         </span>
                         <span class="comment-date">
@@ -1235,25 +1282,27 @@
                     showNotification('メディアファイルをアップロード中...', 'info');
 
                     for (const file of mediaFiles) {
-                        const uploadResult = await window.questaR2.uploadMedia(
-                            file,
-                            window.questaR2.generateStoragePath('comments', file.type.startsWith('image/') ? 'image' : 'audio', file.name),
-                            {
-                                subject: 'comments',
-                                category: 'attachments',
-                                problemId: currentProblem.id
-                            }
-                        );
+                        if (window.questaR2 && window.questaR2.uploadMedia) {
+                            const uploadResult = await window.questaR2.uploadMedia(
+                                file,
+                                window.questaR2.generateStoragePath('comments', file.type.startsWith('image/') ? 'image' : 'audio', file.name),
+                                {
+                                    subject: 'comments',
+                                    category: 'attachments',
+                                    problemId: currentProblem.id
+                                }
+                            );
 
-                        if (uploadResult.success) {
-                            mediaUrls.push({
-                                url: uploadResult.url,
-                                type: uploadResult.type,
-                                name: file.name,
-                                size: uploadResult.size
-                            });
-                        } else {
-                            console.warn('Media upload failed:', uploadResult.error);
+                            if (uploadResult.success) {
+                                mediaUrls.push({
+                                    url: uploadResult.url,
+                                    type: uploadResult.type,
+                                    name: file.name,
+                                    size: uploadResult.size
+                                });
+                            } else {
+                                console.warn('Media upload failed:', uploadResult.error);
+                            }
                         }
                     }
                 } catch (uploadError) {
@@ -1273,24 +1322,36 @@
             };
 
             try {
-                // Save to D1 first
-                const d1Result = await window.questaD1.saveComment(comment);
+                // Ensure D1 client is available
+                if (!window.questaD1 && typeof QuestaD1Client !== 'undefined') {
+                    console.log('⚠️ D1 client not available, creating new instance');
+                    window.questaD1 = new QuestaD1Client();
+                }
 
-                if (d1Result.success) {
-                    console.log('✅ Comment saved to D1:', d1Result.comment);
+                // Save to D1 first if available
+                if (window.questaD1 && typeof window.questaD1.saveComment === 'function') {
+                    const d1Result = await window.questaD1.saveComment(comment);
 
-                    // Clear form
-                    contentInput.value = '';
-                    if (document.getElementById('commentMedia')) {
-                        document.getElementById('commentMedia').value = '';
+                    if (d1Result.success) {
+                        console.log('✅ Comment saved to D1:', d1Result.comment);
+
+                        // Clear form
+                        contentInput.value = '';
+                        if (document.getElementById('commentMedia')) {
+                            document.getElementById('commentMedia').value = '';
+                        }
+
+                        // Reload comments
+                        await loadComments(currentProblem.id);
+
+                        showNotification('コメントを投稿しました！', 'success');
+                        return;
+                    } else {
+                        throw new Error(d1Result.error);
                     }
-
-                    // Reload comments
-                    await loadComments(currentProblem.id);
-
-                    showNotification('コメントを投稿しました！', 'success');
                 } else {
-                    throw new Error(d1Result.error);
+                    console.warn('⚠️ D1 client not available, using localStorage');
+                    throw new Error('D1 client not available');
                 }
             } catch (error) {
                 console.error('❌ D1 save failed, falling back to localStorage:', error);
@@ -1364,19 +1425,60 @@
             }
 
             const user = window.authClient.getCurrentUser();
+            console.log('Deleting comment:', commentId, 'User ID:', user.id);
 
             try {
-                const result = await window.questaD1.deleteComment(commentId, user.id);
+                // Ensure D1 client is available
+                if (!window.questaD1 && typeof QuestaD1Client !== 'undefined') {
+                    console.log('⚠️ D1 client not available, creating new instance');
+                    window.questaD1 = new QuestaD1Client();
+                }
 
-                if (result.success) {
-                    await loadComments(currentProblem.id);
-                    showNotification('コメントを削除しました', 'success');
+                // Try D1 deletion first if available
+                if (window.questaD1 && typeof window.questaD1.deleteComment === 'function') {
+                    const result = await window.questaD1.deleteComment(commentId, user.id);
+                    console.log('D1 delete result:', result);
+
+                    if (result.success) {
+                        await loadComments(currentProblem.id);
+                        showNotification('コメントを削除しました', 'success');
+                        return;
+                    } else {
+                        throw new Error(result.error || 'D1 deletion failed');
+                    }
                 } else {
-                    throw new Error(result.error);
+                    console.warn('⚠️ D1 client not available, using localStorage');
+                    throw new Error('D1 client not available');
                 }
             } catch (error) {
-                console.error('Delete comment error:', error);
-                showNotification('コメント削除に失敗しました', 'error');
+                console.error('D1 delete failed, trying localStorage fallback:', error);
+
+                // Fallback to localStorage deletion
+                try {
+                    const comments = problemComments[currentProblem.id] || [];
+                    const commentIndex = comments.findIndex(c => c.id === commentId);
+
+                    if (commentIndex !== -1) {
+                        // Check if user can delete this comment
+                        const comment = comments[commentIndex];
+                        if (comment.authorId === user.id || comment.user_id === user.id || comment.author === user.displayName) {
+                            // Remove comment from array
+                            comments.splice(commentIndex, 1);
+                            problemComments[currentProblem.id] = comments;
+                            localStorage.setItem('problemComments', JSON.stringify(problemComments));
+
+                            await loadComments(currentProblem.id);
+                            showNotification('コメントを削除しました（ローカル）', 'warning');
+                        } else {
+                            throw new Error('削除権限がありません');
+                        }
+                    } else {
+                        throw new Error('コメントが見つかりません');
+                    }
+                } catch (localError) {
+                    console.error('localStorage delete also failed:', localError);
+                    showNotification('コメント削除に失敗しました: ' + localError.message, 'error');
+                }
             }
         }
 
@@ -1473,11 +1575,29 @@
         // Helper functions
         function canDeleteComment(comment) {
             if (!window.authClient || !window.authClient.isLoggedIn()) {
+                console.log('Cannot delete: user not logged in');
                 return false;
             }
 
             const user = window.authClient.getCurrentUser();
-            return comment.user_id === user.id || comment.authorId === user.id;
+            console.log('Checking delete permission:', {
+                commentId: comment.id,
+                currentUserId: user.id,
+                currentUserDisplayName: user.displayName,
+                commentUserId: comment.user_id,
+                commentAuthorId: comment.authorId,
+                commentAuthor: comment.author,
+                commentAuthorName: comment.author_name
+            });
+
+            // Check multiple possible matches for ownership
+            const canDelete = comment.user_id === user.id ||
+                            comment.authorId === user.id ||
+                            comment.author === user.displayName ||
+                            comment.author_name === user.displayName;
+
+            console.log('Can delete:', canDelete);
+            return canDelete;
         }
 
         function escapeHtml(text) {
@@ -1758,6 +1878,14 @@
 
         // Initialize
         document.addEventListener('DOMContentLoaded', function() {
+            // Initialize D1 client
+            if (typeof QuestaD1Client !== 'undefined' && !window.questaD1) {
+                console.log('✅ Initializing D1 client');
+                window.questaD1 = new QuestaD1Client();
+            } else if (typeof QuestaD1Client === 'undefined') {
+                console.warn('⚠️ QuestaD1Client not found - D1 functionality will use localStorage fallback');
+            }
+
             updateCategoryFilter();
             applyFilters();
             initializeComments();
