@@ -941,10 +941,62 @@ K = \frac{[\ce{H+}][\ce{OH-}]}{[\ce{H2O}]}
         </div>
     </div>
 
-    <!-- KaTeX JavaScript -->
-    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" integrity="sha384-XjKyOOlGwcjNTAIQHIpVOOIECsp0yKiC+jgEF7G4nJH6ILEYHg1A2DZrBH3Oa0sN" crossorigin="anonymous"></script>
-    <!-- KaTeX mhchem extension -->
-    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/mhchem.min.js" integrity="sha384-ifpG+NlgMq0kvOSGqGQxW1mJKpjjMDmZdpKGq3tbvD3WPhyshCEEYClriK/wRVU0" crossorigin="anonymous"></script>
+    <!-- KaTeX JavaScript with fallback -->
+    <script>
+        // Primary CDN
+        function loadKaTeX() {
+            const katexScript = document.createElement('script');
+            katexScript.src = 'https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js';
+            katexScript.crossOrigin = 'anonymous';
+            katexScript.onload = function() {
+                console.log('KaTeX loaded from primary CDN');
+                loadMhchem();
+            };
+            katexScript.onerror = function() {
+                console.warn('Primary CDN failed, trying fallback...');
+                // Fallback CDN
+                const fallbackScript = document.createElement('script');
+                fallbackScript.src = 'https://unpkg.com/katex@0.16.9/dist/katex.min.js';
+                fallbackScript.crossOrigin = 'anonymous';
+                fallbackScript.onload = function() {
+                    console.log('KaTeX loaded from fallback CDN');
+                    loadMhchem();
+                };
+                fallbackScript.onerror = function() {
+                    console.error('All CDNs failed to load KaTeX');
+                };
+                document.head.appendChild(fallbackScript);
+            };
+            document.head.appendChild(katexScript);
+        }
+
+        function loadMhchem() {
+            const mhchemScript = document.createElement('script');
+            mhchemScript.src = 'https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/mhchem.min.js';
+            mhchemScript.crossOrigin = 'anonymous';
+            mhchemScript.onload = function() {
+                console.log('mhchem loaded successfully');
+            };
+            mhchemScript.onerror = function() {
+                console.warn('mhchem loading failed, trying fallback...');
+                const fallbackScript = document.createElement('script');
+                fallbackScript.src = 'https://unpkg.com/katex@0.16.9/dist/contrib/mhchem.min.js';
+                fallbackScript.crossOrigin = 'anonymous';
+                fallbackScript.onload = function() {
+                    console.log('mhchem loaded from fallback CDN');
+                };
+                document.head.appendChild(fallbackScript);
+            };
+            document.head.appendChild(mhchemScript);
+        }
+
+        // Start loading when DOM is ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', loadKaTeX);
+        } else {
+            loadKaTeX();
+        }
+    </script>
 
     <script>
         // 🚀 革命的KaTeX+mhchem統合化学作成システム
@@ -969,8 +1021,16 @@ K = \frac{[\ce{H+}][\ce{OH-}]}{[\ce{H2O}]}
 
             // KaTeX読み込み待機
             waitForKaTeX() {
+                console.log('Starting KaTeX detection...');
+                let attempts = 0;
+                const maxAttempts = 50; // 15秒間試行
+
                 const checkKaTeX = () => {
+                    attempts++;
+                    console.log(`KaTeX check attempt ${attempts}/${maxAttempts}`);
+
                     if (window.katex) {
+                        console.log('KaTeX found, testing mhchem...');
                         // シンプルなmhchemテスト
                         try {
                             const testResult = window.katex.renderToString('\\ce{H2O}', {
@@ -981,15 +1041,25 @@ K = \frac{[\ce{H+}][\ce{OH-}]}{[\ce{H2O}]}
                             this.renderInitialMath();
                             return;
                         } catch (error) {
-                            console.warn('mhchem test failed:', error.message);
-                            setTimeout(checkKaTeX, 300);
+                            console.warn(`mhchem test failed (attempt ${attempts}):`, error.message);
+                            if (attempts < maxAttempts) {
+                                setTimeout(checkKaTeX, 300);
+                            } else {
+                                this.addStatus('❌ mhchem読み込み失敗', 'error');
+                            }
                         }
                     } else {
-                        setTimeout(checkKaTeX, 100);
+                        console.log('KaTeX not found yet...');
+                        if (attempts < maxAttempts) {
+                            setTimeout(checkKaTeX, 300);
+                        } else {
+                            this.addStatus('❌ KaTeX読み込み失敗', 'error');
+                        }
                     }
                 };
+
                 // ページ読み込み後に少し待つ
-                setTimeout(checkKaTeX, 1000);
+                setTimeout(checkKaTeX, 2000); // 2秒に延長
             }
 
             // 超シンプル・確実なLaTeXボタンシステム
