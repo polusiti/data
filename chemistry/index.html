@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🔥 Chemistry Creator v5.1 - MOBILE OPTIMIZED LATEX SYSTEM - 2025-09-21</title>
+    <title>🔥 Chemistry Creator v5.1 - MOBILE OPTIMIZED KATEX MHCHEM SYSTEM - 2025-09-21</title>
 
     <!-- KaTeX CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css" integrity="sha384-GvrOXuhMATgEsSwCs4smul74iXGOixntILdUW9XmUC6+HX0sLNAK3q71HotJqlAn" crossorigin="anonymous">
@@ -24,291 +24,1304 @@
             --error-color: #ef4444;
         }
 
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background-color: var(--bg-light);
-            padding-top: 60px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Hiragino Sans', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            overflow-x: hidden;
         }
 
-        /* Navigation */
-        .navbar {
-            background: white !important;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            padding: 0.5rem 1rem;
+        .container {
+            max-width: 100%;
+            margin: 0 auto;
+            padding: 0;
         }
 
-        .navbar-brand {
-            font-weight: bold;
-            color: var(--primary-color) !important;
-            font-size: 1.1rem;
-        }
-
-        .navbar-nav .nav-link {
-            color: var(--text-dark) !important;
-            font-weight: 500;
-            padding: 0.5rem 1rem !important;
-        }
-
-        .navbar-nav .nav-link:hover {
-            color: var(--primary-color) !important;
-            background-color: var(--bg-light);
-            border-radius: 6px;
-        }
-
-        /* Hero Section */
-        .hero {
+        header {
             background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
             color: white;
-            padding: 2rem 0;
-            margin: -1rem -15px 2rem -15px;
+            padding: 15px 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
         }
 
-        .hero h1 {
-            font-size: 1.5rem;
-            margin-bottom: 0.5rem;
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
 
-        .hero p {
-            font-size: 0.9rem;
+        h1 {
+            font-size: 1.4rem;
+            margin: 0;
+        }
+
+        .back-link {
+            color: white;
+            text-decoration: none;
+            font-weight: 500;
             opacity: 0.9;
-            margin-bottom: 1.5rem;
+            transition: opacity 0.2s;
         }
 
-        /* Mobile Optimizations */
-        @media (max-width: 768px) {
-            .container-fluid {
-                padding: 0.5rem;
-            }
-            
-            .hero {
-                margin: -0.5rem -0.5rem 1rem -0.5rem;
-                padding: 1.5rem 1rem;
-            }
+        .back-link:hover {
+            opacity: 1;
         }
 
-        .problem-item {
-            border-bottom: 1px solid var(--border-light);
-            padding: 1rem 0;
+        /* 革命的トリプルペインレイアウト */
+        .triple-pane-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            height: calc(100vh - 80px);
+            gap: 0;
         }
 
-        .problem-item:last-child {
-            border-bottom: none;
+        .input-pane {
+            background: var(--editor-bg);
+            border-right: 2px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
         }
 
-        .problem-title {
+        .preview-pane {
+            background: var(--preview-bg);
+            border-right: 2px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .tools-pane {
+            background: var(--bg-color);
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* 化学分野選択 */
+        .mode-selector {
+            background: white;
+            border-bottom: 2px solid var(--border-color);
+            padding: 10px;
+            display: flex;
+            gap: 5px;
+            flex-wrap: wrap;
+        }
+
+        .mode-btn {
+            padding: 6px 12px;
+            background: var(--editor-bg);
+            border: 2px solid #e5e7eb;
+            border-radius: 16px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+        .mode-btn.active {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+
+        .mode-btn:hover:not(.active) {
+            background: var(--hover-bg);
+        }
+
+        /* KaTeX対応LaTeXツールバー */
+        .latex-toolbar {
+            background: white;
+            border-bottom: 2px solid var(--border-color);
+            padding: 10px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+            gap: 4px;
+            max-height: 180px;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            scroll-behavior: smooth;
+        }
+
+        .latex-btn {
+            background: var(--editor-bg);
+            border: 1px solid #e5e7eb;
+            border-radius: 4px;
+            padding: 6px 3px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.15s ease;
+            min-height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-touch-callout: none;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+        }
+
+        .latex-btn:hover {
+            background: var(--hover-bg);
+            transform: translateY(-1px);
+        }
+
+        .latex-btn:active {
+            background: var(--accent-color);
+            color: white;
+            transform: translateY(0) scale(0.97);
+        }
+
+        .latex-btn.flash {
+            background: var(--success-color) !important;
+            color: white !important;
+            transform: scale(0.95) !important;
+        }
+
+        /* 入力エリア */
+        .input-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 15px;
+        }
+
+        .section-header {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--secondary-color);
+            margin-bottom: 10px;
+            padding: 6px 10px;
+            background: white;
+            border-radius: 6px;
+            border: 2px solid var(--border-color);
+        }
+
+        .input-textarea {
+            flex: 1;
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e5e7eb;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-family: 'Courier New', Consolas, monospace;
+            line-height: 1.5;
+            resize: none;
+            outline: none;
+            transition: border-color 0.2s;
+            background: white;
+        }
+
+        .input-textarea:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+        }
+
+        /* プレビューエリア */
+        .preview-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 15px;
+        }
+
+        .preview-content {
+            flex: 1;
+            padding: 15px;
+            border: 2px solid #e5e7eb;
+            border-radius: 6px;
+            background: white;
+            overflow-y: auto;
             font-size: 1.1rem;
-            font-weight: bold;
-            color: var(--primary-color);
-            margin-bottom: 0.5rem;
+            line-height: 1.6;
         }
 
-        .problem-meta {
-            color: var(--text-muted);
+        .normalized-output {
+            background: #f0fdf4;
+            border: 2px solid var(--primary-color);
+            border-radius: 6px;
+            padding: 10px;
+            margin-bottom: 10px;
+            font-family: 'Courier New', Consolas, monospace;
             font-size: 0.9rem;
-            margin-bottom: 0.5rem;
+            color: var(--secondary-color);
         }
 
-        .problem-content {
-            margin-bottom: 1rem;
+        /* ツールペイン */
+        .tools-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 15px;
+        }
+
+        /* サンプル数式チップ */
+        .sample-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-bottom: 15px;
+        }
+
+        .sample-chip {
+            background: white;
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            padding: 6px 10px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.2s;
+            font-family: 'Courier New', Consolas, monospace;
+        }
+
+        .sample-chip:hover {
+            background: var(--hover-bg);
+            transform: translateY(-1px);
+        }
+
+        .sample-chip:active {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        /* 状態表示 */
+        .status-area {
+            background: white;
+            border: 2px solid #e5e7eb;
+            border-radius: 6px;
+            padding: 10px;
+            margin-bottom: 10px;
+            min-height: 60px;
+        }
+
+        .status-message {
+            padding: 8px 10px;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            margin-bottom: 5px;
+        }
+
+        .status-message.success {
+            background: #d1fae5;
+            color: #065f46;
+            border: 1px solid var(--success-color);
+        }
+
+        .status-message.warning {
+            background: #fef3c7;
+            color: #92400e;
+            border: 1px solid var(--warning-color);
+        }
+
+        .status-message.error {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid var(--error-color);
+        }
+
+        /* 保存エリア */
+        .save-section {
+            background: white;
+            border-top: 2px solid var(--border-color);
+            padding: 12px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group label {
+            font-weight: 500;
+            margin-bottom: 4px;
+            color: #374151;
+            font-size: 0.85rem;
+        }
+
+        .form-group input,
+        .form-group select {
+            padding: 6px 8px;
+            border: 2px solid #e5e7eb;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            transition: border-color 0.2s;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+
+        .save-button {
+            grid-column: 1 / -1;
+            padding: 10px 16px;
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 8px;
+        }
+
+        .save-button:hover {
+            background: var(--secondary-color);
+            transform: translateY(-1px);
+        }
+
+        /* モバイル最適化 - スマホファースト設計 */
+        @media (max-width: 1024px) {
+            .triple-pane-container {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto auto auto 1fr;
+                height: auto;
+                min-height: calc(100vh - 80px);
+            }
+
+            .input-pane,
+            .preview-pane,
+            .tools-pane {
+                border-right: none;
+                border-bottom: 2px solid var(--border-color);
+            }
+
+            .tools-pane {
+                order: -1; /* ツールペインを最上部に */
+                max-height: 35vh;
+                overflow-y: auto;
+            }
+
+            .latex-toolbar {
+                grid-template-columns: repeat(auto-fit, minmax(85px, 1fr));
+                gap: 8px;
+                padding: 15px;
+                max-height: 200px;
+                overflow-y: scroll;
+                -webkit-overflow-scrolling: touch;
+                scroll-behavior: smooth;
+                overscroll-behavior: contain;
+            }
+
+            .latex-btn {
+                min-height: 50px;
+                font-size: 1rem;
+                padding: 8px 4px;
+            }
+
+            .mode-selector {
+                padding: 12px;
+                gap: 8px;
+            }
+
+            .mode-btn {
+                padding: 8px 12px;
+                font-size: 0.9rem;
+                min-height: 40px;
+            }
+
+            .sample-chips {
+                gap: 8px;
+                margin-bottom: 20px;
+            }
+
+            .sample-chip {
+                padding: 8px 12px;
+                font-size: 0.9rem;
+                min-height: 40px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 1.1rem;
+            }
+
+            .header-content {
+                padding: 10px 15px;
+            }
+
+            .latex-toolbar {
+                grid-template-columns: repeat(auto-fit, minmax(60px, 1fr));
+                gap: 10px;
+                padding: 15px;
+                overflow-y: scroll;
+                -webkit-overflow-scrolling: touch;
+                scroll-behavior: smooth;
+                overscroll-behavior: contain;
+            }
+
+            .latex-btn {
+                min-height: 55px;
+                font-size: 1.1rem;
+                border-radius: 8px;
+            }
+
+            .mode-btn {
+                min-height: 45px;
+                border-radius: 20px;
+                font-weight: 600;
+            }
+
+            .input-textarea {
+                font-size: 1.1rem;
+                padding: 15px;
+                line-height: 1.6;
+            }
+
+            .section-header {
+                font-size: 1.1rem;
+                padding: 10px 15px;
+            }
+
+            .save-button {
+                padding: 15px 20px;
+                font-size: 1.1rem;
+                border-radius: 8px;
+                margin-top: 15px;
+            }
+
+            .form-group input,
+            .form-group select {
+                padding: 12px;
+                font-size: 1rem;
+                border-radius: 8px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .header-content {
+                flex-direction: column;
+                gap: 8px;
+                text-align: center;
+            }
+
+            .latex-toolbar {
+                grid-template-columns: repeat(auto-fit, minmax(65px, 1fr));
+                gap: 12px;
+                padding: 20px 15px;
+                overflow-y: scroll;
+                -webkit-overflow-scrolling: touch;
+                scroll-behavior: smooth;
+                overscroll-behavior: contain;
+                scroll-snap-type: y proximity;
+            }
+
+            .latex-btn {
+                min-height: 60px;
+                font-size: 1.2rem;
+                border-radius: 10px;
+                border-width: 2px;
+            }
+
+            .mode-selector {
+                padding: 15px;
+                gap: 10px;
+                justify-content: center;
+            }
+
+            .mode-btn {
+                min-height: 50px;
+                padding: 10px 15px;
+                font-size: 1rem;
+                border-radius: 25px;
+                font-weight: 700;
+                min-width: 80px;
+            }
+
+            .sample-chip {
+                min-height: 45px;
+                padding: 10px 15px;
+                font-size: 1rem;
+                border-radius: 15px;
+                font-weight: 600;
+            }
+
+            .input-section,
+            .preview-section,
+            .tools-section {
+                padding: 20px 15px;
+            }
+
+            .input-textarea {
+                font-size: 1.2rem;
+                padding: 20px;
+                border-radius: 10px;
+                border-width: 3px;
+            }
+
+            .preview-content {
+                padding: 20px;
+                border-radius: 10px;
+                border-width: 3px;
+                font-size: 1.2rem;
+            }
+
+            .save-section {
+                padding: 20px 15px;
+                gap: 15px;
+                grid-template-columns: 1fr;
+            }
+
+            .save-button {
+                padding: 18px 25px;
+                font-size: 1.2rem;
+                font-weight: 700;
+                border-radius: 10px;
+                margin-top: 20px;
+            }
+
+            .form-group {
+                margin-bottom: 15px;
+            }
+
+            .form-group label {
+                font-size: 1rem;
+                margin-bottom: 8px;
+                font-weight: 600;
+            }
+
+            .form-group input,
+            .form-group select {
+                padding: 15px;
+                font-size: 1.1rem;
+                border-radius: 10px;
+                border-width: 3px;
+                min-height: 50px;
+            }
+
+            .normalized-output {
+                padding: 15px;
+                font-size: 1rem;
+                border-radius: 10px;
+                border-width: 3px;
+            }
+
+            .status-area {
+                padding: 15px;
+                border-radius: 10px;
+                border-width: 3px;
+                min-height: 80px;
+            }
+
+            .status-message {
+                padding: 12px;
+                font-size: 1rem;
+                border-radius: 8px;
+            }
+        }
+
+        /* KaTeX スタイル最適化 */
+        .katex {
+            font-size: 1.1rem !important;
+        }
+
+        .katex-display {
+            margin: 10px 0 !important;
+        }
+
+        /* プレースホルダー */
+        .preview-placeholder {
+            color: #9ca3af;
+            font-style: italic;
+            text-align: center;
+            opacity: 0.7;
+            margin-top: 30px;
+        }
+
+        /* スクロールバー最適化 */
+        .latex-toolbar::-webkit-scrollbar,
+        .preview-content::-webkit-scrollbar,
+        .tools-section::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .latex-toolbar::-webkit-scrollbar-track,
+        .preview-content::-webkit-scrollbar-track,
+        .tools-section::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 2px;
+        }
+
+        .latex-toolbar::-webkit-scrollbar-thumb,
+        .preview-content::-webkit-scrollbar-thumb,
+        .tools-section::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 2px;
         }
     </style>
 </head>
 <body>
-    <!-- Navigation -->
-    <nav class="navbar navbar-expand-lg navbar-light fixed-top">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="#"><i class="fas fa-flask"></i> 化学問題管理</a>
-            
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto">
-                    <li class="nav-item">
-                        <a class="nav-link" href="../">
-                            <i class="fas fa-arrow-left"></i> 理科システムに戻る
-                        </a>
-                    </li>
-                </ul>
-            </div>
+    <header>
+        <div class="header-content">
+            <h1>🧪 スマホ最適化化学システム v5.1</h1>
+            <a href="../" class="back-link">← ダッシュボード</a>
         </div>
-    </nav>
+    </header>
 
-    <!-- Main Content -->
-    <div class="container-fluid">
-        <!-- Hero Section -->
-        <div class="hero">
-            <div class="container">
-                <div class="row align-items-center">
-                    <div class="col-md-8">
-                        <h1><i class="fas fa-flask"></i> 化学問題管理</h1>
-                        <p>無機化学、有機化学、物理化学の問題を作成・管理</p>
-                    </div>
+    <div class="container">
+        <div class="triple-pane-container">
+            <!-- 入力ペイン -->
+            <div class="input-pane">
+                <!-- 化学分野選択 -->
+                <div class="mode-selector">
+                    <button class="mode-btn active" data-mode="general">一般化学</button>
+                    <button class="mode-btn" data-mode="organic">有機化学</button>
+                    <button class="mode-btn" data-mode="inorganic">無機化学</button>
+                    <button class="mode-btn" data-mode="physical">物理化学</button>
+                    <button class="mode-btn" data-mode="analytical">分析化学</button>
+                </div>
+
+                <!-- LaTeX ツールバー -->
+                <div class="latex-toolbar" id="latexToolbar">
+                    <!-- 化学式（mhchem） -->
+                    <button class="latex-btn" data-latex="\ce{H2O}" title="水分子">$\ce{H2O}$</button>
+                    <button class="latex-btn" data-latex="\ce{CO2}" title="二酸化炭素">$\ce{CO2}$</button>
+                    <button class="latex-btn" data-latex="\ce{NH3}" title="アンモニア">$\ce{NH3}$</button>
+                    <button class="latex-btn" data-latex="\ce{CH4}" title="メタン">$\ce{CH4}$</button>
+                    <button class="latex-btn" data-latex="\ce{C2H6}" title="エタン">$\ce{C2H6}$</button>
+                    <button class="latex-btn" data-latex="\ce{C6H6}" title="ベンゼン">$\ce{C6H6}$</button>
+
+                    <!-- 化学反応式 -->
+                    <button class="latex-btn" data-latex="\ce{A + B -> C + D}" title="化学反応式">$\ce{A + B -> C + D}$</button>
+                    <button class="latex-btn" data-latex="\ce{<->}" title="可逆反応">$\ce{<->}$</button>
+                    <button class="latex-btn" data-latex="\ce{<=>>}" title="平衡">$\ce{<=>>}$</button>
+                    <button class="latex-btn" data-latex="\ce{->>" title="不可逆反応">$\ce{->>}$</button>
+                    <button class="latex-btn" data-latex="\ce{->[heat]}" title="条件付き反応">$\ce{->[heat]}$</button>
+
+                    <!-- イオン・電荷 -->
+                    <button class="latex-btn" data-latex="\ce{H+}" title="水素イオン">$\ce{H+}$</button>
+                    <button class="latex-btn" data-latex="\ce{OH-}" title="水酸化物イオン">$\ce{OH-}$</button>
+                    <button class="latex-btn" data-latex="\ce{SO4^2-}" title="硫酸イオン">$\ce{SO4^2-}$</button>
+                    <button class="latex-btn" data-latex="\ce{NH4+}" title="アンモニウムイオン">$\ce{NH4+}$</button>
+                    <button class="latex-btn" data-latex="\ce{Ca^2+}" title="カルシウムイオン">$\ce{Ca^2+}$</button>
+                    <button class="latex-btn" data-latex="\ce{Cl-}" title="塩化物イオン">$\ce{Cl-}$</button>
+
+                    <!-- 状態記号 -->
+                    <button class="latex-btn" data-latex="\ce{(s)}" title="固体">$\ce{(s)}$</button>
+                    <button class="latex-btn" data-latex="\ce{(l)}" title="液体">$\ce{(l)}$</button>
+                    <button class="latex-btn" data-latex="\ce{(g)}" title="気体">$\ce{(g)}$</button>
+                    <button class="latex-btn" data-latex="\ce{(aq)}" title="水溶液">$\ce{(aq)}$</button>
+
+                    <!-- 基本演算 -->
+                    <button class="latex-btn" data-latex="\frac{}{}" title="分数">$\frac{a}{b}$</button>
+                    <button class="latex-btn" data-latex="\sqrt{}" title="平方根">$\sqrt{x}$</button>
+                    <button class="latex-btn" data-latex="^{}" title="べき乗">$x^{n}$</button>
+                    <button class="latex-btn" data-latex="_{}" title="下付き">$x_{i}$</button>
+                    <button class="latex-btn" data-latex="\pm" title="±">$\pm$</button>
+                    <button class="latex-btn" data-latex="\times" title="×">$\times$</button>
+
+                    <!-- 微分積分 -->
+                    <button class="latex-btn" data-latex="\frac{d}{dt}" title="時間微分">$\frac{d}{dt}$</button>
+                    <button class="latex-btn" data-latex="\frac{dC}{dt}" title="濃度変化">$\frac{dC}{dt}$</button>
+                    <button class="latex-btn" data-latex="\frac{\partial}{\partial t}" title="偏微分">$\frac{\partial}{\partial t}$</button>
+                    <button class="latex-btn" data-latex="\int" title="積分">$\int$</button>
+
+                    <!-- 対数・指数 -->
+                    <button class="latex-btn" data-latex="e^{}" title="指数関数">$e^{x}$</button>
+                    <button class="latex-btn" data-latex="e^{-\frac{E_a}{RT}}" title="アレニウス式">$e^{-\frac{E_a}{RT}}$</button>
+                    <button class="latex-btn" data-latex="\ln" title="自然対数">$\ln$</button>
+                    <button class="latex-btn" data-latex="\log" title="対数">$\log$</button>
+
+                    <!-- 物理化学定数 -->
+                    <button class="latex-btn" data-latex="R" title="気体定数">$R$</button>
+                    <button class="latex-btn" data-latex="N_A" title="アボガドロ数">$N_A$</button>
+                    <button class="latex-btn" data-latex="k_B" title="ボルツマン定数">$k_B$</button>
+                    <button class="latex-btn" data-latex="F" title="ファラデー定数">$F$</button>
+                    <button class="latex-btn" data-latex="h" title="プランク定数">$h$</button>
+                    <button class="latex-btn" data-latex="c" title="光速">$c$</button>
+
+                    <!-- ギリシャ文字（化学用） -->
+                    <button class="latex-btn" data-latex="\alpha" title="アルファ">$\alpha$</button>
+                    <button class="latex-btn" data-latex="\beta" title="ベータ">$\beta$</button>
+                    <button class="latex-btn" data-latex="\gamma" title="ガンマ">$\gamma$</button>
+                    <button class="latex-btn" data-latex="\delta" title="デルタ">$\delta$</button>
+                    <button class="latex-btn" data-latex="\epsilon" title="イプシロン">$\epsilon$</button>
+                    <button class="latex-btn" data-latex="\theta" title="シータ">$\theta$</button>
+                    <button class="latex-btn" data-latex="\lambda" title="波長">$\lambda$</button>
+                    <button class="latex-btn" data-latex="\mu" title="ミュー">$\mu$</button>
+                    <button class="latex-btn" data-latex="\nu" title="周波数">$\nu$</button>
+                    <button class="latex-btn" data-latex="\rho" title="密度">$\rho$</button>
+                    <button class="latex-btn" data-latex="\sigma" title="シグマ">$\sigma$</button>
+                    <button class="latex-btn" data-latex="\tau" title="時定数">$\tau$</button>
+                    <button class="latex-btn" data-latex="\phi" title="位相">$\phi$</button>
+                    <button class="latex-btn" data-latex="\omega" title="角周波数">$\omega$</button>
+
+                    <!-- 大文字ギリシャ文字 -->
+                    <button class="latex-btn" data-latex="\Delta" title="変化量">$\Delta$</button>
+                    <button class="latex-btn" data-latex="\Gamma" title="ガンマ">$\Gamma$</button>
+                    <button class="latex-btn" data-latex="\Lambda" title="ラムダ">$\Lambda$</button>
+                    <button class="latex-btn" data-latex="\Omega" title="オメガ">$\Omega$</button>
+                    <button class="latex-btn" data-latex="\Phi" title="ファイ">$\Phi$</button>
+                    <button class="latex-btn" data-latex="\Psi" title="プサイ">$\Psi$</button>
+
+                    <!-- 特殊記号 -->
+                    <button class="latex-btn" data-latex="\infty" title="無限大">$\infty$</button>
+                    <button class="latex-btn" data-latex="\partial" title="偏微分記号">$\partial$</button>
+                    <button class="latex-btn" data-latex="\propto" title="比例">$\propto$</button>
+                    <button class="latex-btn" data-latex="\approx" title="近似">$\approx$</button>
+                    <button class="latex-btn" data-latex="\sim" title="～">$\sim$</button>
+                    <button class="latex-btn" data-latex="\equiv" title="恒等">$\equiv$</button>
+
+                    <!-- 不等号・関係 -->
+                    <button class="latex-btn" data-latex="\leq" title="以下">$\leq$</button>
+                    <button class="latex-btn" data-latex="\geq" title="以上">$\geq$</button>
+                    <button class="latex-btn" data-latex="\neq" title="不等">$\neq$</button>
+                    <button class="latex-btn" data-latex="\ll" title="はるかに小さい">$\ll$</button>
+                    <button class="latex-btn" data-latex="\gg" title="はるかに大きい">$\gg$</button>
+
+                    <!-- 括弧類 -->
+                    <button class="latex-btn" data-latex="\left( \right)" title="大括弧">$\left( \right)$</button>
+                    <button class="latex-btn" data-latex="\left[ \right]" title="角括弧">$\left[ \right]$</button>
+                    <button class="latex-btn" data-latex="\left| \right|" title="絶対値">$\left| \right|$</button>
+                    <button class="latex-btn" data-latex="\left\{ \right\}" title="波括弧">$\left\{ \right\}$</button>
+
+                    <!-- 総和・積分記号 -->
+                    <button class="latex-btn" data-latex="\sum_{i=1}^{n}" title="総和">$\sum_{i=1}^{n}$</button>
+                    <button class="latex-btn" data-latex="\prod_{i=1}^{n}" title="総積">$\prod_{i=1}^{n}$</button>
+
+                    <!-- 極限 -->
+                    <button class="latex-btn" data-latex="\lim_{t \to 0}" title="極限">$\lim_{t \to 0}$</button>
+                    <button class="latex-btn" data-latex="\lim_{n \to \infty}" title="無限極限">$\lim_{n \to \infty}$</button>
+
+                    <!-- 三角関数 -->
+                    <button class="latex-btn" data-latex="\sin" title="正弦">$\sin$</button>
+                    <button class="latex-btn" data-latex="\cos" title="余弦">$\cos$</button>
+                    <button class="latex-btn" data-latex="\tan" title="正接">$\tan$</button>
+                </div>
+
+                <!-- 入力エリア -->
+                <div class="input-section">
+                    <div class="section-header">🧪 化学式入力</div>
+                    <textarea
+                        id="mathInput"
+                        class="input-textarea"
+                        placeholder="LaTeX/mhchem形式で化学式を入力してください
+
+例:
+\ce{H2 + Cl2 -> 2HCl}
+\ce{CaCO3 ->[heat] CaO + CO2}
+K = \frac{[\ce{H+}][\ce{OH-}]}{[\ce{H2O}]}
+\Delta H = \sum \Delta H_f(\text{生成物}) - \sum \Delta H_f(\text{反応物})"></textarea>
                 </div>
             </div>
-        </div>
 
-        <!-- Problem Creation Form -->
-        <div class="row mb-4">
-            <div class="col-12">
-                <div class="card">
-                    <div class="card-header">
-                        <h5 class="mb-0"><i class="fas fa-plus"></i> 新しい化学問題を作成</h5>
+            <!-- プレビューペイン -->
+            <div class="preview-pane">
+                <div class="preview-section">
+                    <div class="section-header">👁️ リアルタイムプレビュー</div>
+
+                    <!-- 正規化出力 -->
+                    <div class="normalized-output" id="normalizedOutput">
+                        正規化された化学式がここに表示されます
                     </div>
-                    <div class="card-body">
-                        <form onsubmit="addProblem(event)">
-                            <div class="row">
-                                <div class="col-md-6 mb-3">
-                                    <label for="problemTitle" class="form-label">問題タイトル</label>
-                                    <input type="text" class="form-control" id="problemTitle" placeholder="例: 酸塩基反応の化学式" required>
-                                </div>
-                                <div class="col-md-3 mb-3">
-                                    <label for="problemCategory" class="form-label">分野</label>
-                                    <select class="form-select" id="problemCategory">
-                                        <option value="inorganic">無機化学</option>
-                                        <option value="organic">有機化学</option>
-                                        <option value="physical">物理化学</option>
-                                        <option value="analytical">分析化学</option>
-                                        <option value="biochemistry">生化学</option>
-                                    </select>
-                                </div>
-                                <div class="col-md-3 mb-3">
-                                    <label for="problemDifficulty" class="form-label">難易度</label>
-                                    <select class="form-select" id="problemDifficulty">
-                                        <option value="basic">基礎</option>
-                                        <option value="standard">標準</option>
-                                        <option value="advanced">発展</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="mb-3">
-                                <label for="problemText" class="form-label">問題文</label>
-                                <textarea class="form-control" id="problemText" rows="3" placeholder="問題文を入力してください..." required></textarea>
-                            </div>
-                            <div class="mb-3">
-                                <label for="problemAnswer" class="form-label">解答</label>
-                                <textarea class="form-control" id="problemAnswer" rows="3" placeholder="解答を入力してください..." required></textarea>
-                            </div>
-                            <button type="submit" class="btn btn-primary">
-                                <i class="fas fa-save"></i> 問題を追加
-                            </button>
-                        </form>
+
+                    <!-- レンダリング結果 -->
+                    <div id="mathPreview" class="preview-content">
+                        <div class="preview-placeholder">
+                            化学式を入力すると、ここにKaTeX+mhchemでレンダリングされた結果が表示されます
+                        </div>
                     </div>
                 </div>
-            </div>
-        </div>
 
-        <!-- Problems List -->
-        <div class="row">
-            <div class="col-12">
-                <div class="card">
-                    <div class="card-header">
-                        <h5 class="mb-0"><i class="fas fa-list"></i> 化学問題一覧</h5>
+                <!-- 保存エリア -->
+                <div class="save-section">
+                    <div class="form-group">
+                        <label for="questionTitle">問題タイトル</label>
+                        <input type="text" id="questionTitle" placeholder="化学問題のタイトル">
                     </div>
-                    <div class="card-body" id="problemsList">
-                        <p class="text-muted text-center">まだ問題が登録されていません。</p>
+                    <div class="form-group">
+                        <label for="fieldCode">分野</label>
+                        <select id="fieldCode">
+                            <option value="">選択してください</option>
+                            <option value="general">一般化学</option>
+                            <option value="organic">有機化学</option>
+                            <option value="inorganic">無機化学</option>
+                            <option value="physical">物理化学</option>
+                            <option value="analytical">分析化学</option>
+                            <option value="biochemistry">生化学</option>
+                            <option value="polymer">高分子化学</option>
+                            <option value="environmental">環境化学</option>
+                        </select>
+                    </div>
+                    <button class="save-button" id="saveButton">🧪 問題を保存</button>
+                    <div id="saveMessage"></div>
+                </div>
+            </div>
+
+            <!-- ツールペイン -->
+            <div class="tools-pane">
+                <div class="tools-section">
+                    <div class="section-header">🛠️ 化学式サンプル</div>
+
+                    <!-- サンプル化学式 -->
+                    <div class="sample-chips">
+                        <!-- 一般化学 -->
+                        <div class="sample-chip" data-sample="\ce{2H2 + O2 -> 2H2O}">水の生成</div>
+                        <div class="sample-chip" data-sample="\ce{N2 + 3H2 <=> 2NH3}">ハーバー・ボッシュ法</div>
+                        <div class="sample-chip" data-sample="\ce{CaCO3 ->[heat] CaO + CO2}">石灰石の分解</div>
+                        <div class="sample-chip" data-sample="\ce{CH4 + 2O2 -> CO2 + 2H2O}">メタンの燃焼</div>
+                        <div class="sample-chip" data-sample="\ce{2Na + 2H2O -> 2NaOH + H2}">ナトリウムと水</div>
+
+                        <!-- イオン化反応 -->
+                        <div class="sample-chip" data-sample="\ce{HCl -> H+ + Cl-}">塩酸の電離</div>
+                        <div class="sample-chip" data-sample="\ce{H2O <=> H+ + OH-}">水の自己電離</div>
+                        <div class="sample-chip" data-sample="\ce{NH3 + H2O <=> NH4+ + OH-}">アンモニアの塩基性</div>
+                        <div class="sample-chip" data-sample="\ce{CH3COOH <=> CH3COO- + H+}">酢酸の電離</div>
+
+                        <!-- 酸化還元 -->
+                        <div class="sample-chip" data-sample="\ce{Zn + Cu^2+ -> Zn^2+ + Cu}">ダニエル電池</div>
+                        <div class="sample-chip" data-sample="\ce{2H2O ->[電気分解] 2H2 + O2}">水の電気分解</div>
+                        <div class="sample-chip" data-sample="\ce{Fe^3+ + e- -> Fe^2+}">鉄イオンの還元</div>
+
+                        <!-- 有機化学 -->
+                        <div class="sample-chip" data-sample="\ce{C2H4 + H2O ->[H+] C2H5OH}">エタノールの合成</div>
+                        <div class="sample-chip" data-sample="\ce{C6H6 + CH3Cl ->[AlCl3] C6H5CH3 + HCl}">フリーデルクラフツ反応</div>
+                        <div class="sample-chip" data-sample="\ce{CH3CH2OH ->[K2Cr2O7] CH3CHO}">アルコールの酸化</div>
+                        <div class="sample-chip" data-sample="\ce{C2H2 + 2H2 ->[Pd] C2H6}">アセチレンの還元</div>
+
+                        <!-- 物理化学式 -->
+                        <div class="sample-chip" data-sample="PV = nRT">理想気体の状態方程式</div>
+                        <div class="sample-chip" data-sample="\Delta G = \Delta H - T\Delta S">ギブズエネルギー</div>
+                        <div class="sample-chip" data-sample="K = \frac{[\ce{C}]^c[\ce{D}]^d}{[\ce{A}]^a[\ce{B}]^b}">平衡定数</div>
+                        <div class="sample-chip" data-sample="k = Ae^{-\frac{E_a}{RT}}">アレニウス式</div>
+                        <div class="sample-chip" data-sample="pH = -\log[\ce{H+}]">pH定義</div>
+                        <div class="sample-chip" data-sample="\ln K = -\frac{\Delta G°}{RT}">平衡定数とギブズエネルギー</div>
+
+                        <!-- 熱化学 -->
+                        <div class="sample-chip" data-sample="\Delta H = \sum \Delta H_f(\text{生成物}) - \sum \Delta H_f(\text{反応物})">ヘスの法則</div>
+                        <div class="sample-chip" data-sample="q = mc\Delta T">熱量の計算</div>
+                        <div class="sample-chip" data-sample="\Delta S = \frac{q_{rev}}{T}">エントロピー変化</div>
+
+                        <!-- 電気化学 -->
+                        <div class="sample-chip" data-sample="E° = E°_{cathode} - E°_{anode}">標準電位</div>
+                        <div class="sample-chip" data-sample="\Delta G = -nFE">電気化学的エネルギー</div>
+                        <div class="sample-chip" data-sample="E = E° - \frac{RT}{nF}\ln Q">ネルンストの式</div>
+
+                        <!-- 反応速度論 -->
+                        <div class="sample-chip" data-sample="v = k[\ce{A}]^m[\ce{B}]^n">反応速度式</div>
+                        <div class="sample-chip" data-sample="\ln[\ce{A}] = \ln[\ce{A}]_0 - kt">一次反応の積分形</div>
+                        <div class="sample-chip" data-sample="t_{1/2} = \frac{\ln 2}{k}">一次反応の半減期</div>
+
+                        <!-- 量子化学 -->
+                        <div class="sample-chip" data-sample="E = h\nu">プランクの関係式</div>
+                        <div class="sample-chip" data-sample="\lambda = \frac{h}{p}">ド・ブロイ波長</div>
+                        <div class="sample-chip" data-sample="\Delta x \Delta p \geq \frac{\hbar}{2}">不確定性原理</div>
+
+                        <!-- 分析化学 -->
+                        <div class="sample-chip" data-sample="A = \epsilon bc">ランベルト・ベールの法則</div>
+                        <div class="sample-chip" data-sample="C_1V_1 = C_2V_2">希釈の法則</div>
+                        <div class="sample-chip" data-sample="M = \frac{n}{V}">モル濃度</div>
+                    </div>
+
+                    <!-- 状態表示 -->
+                    <div class="status-area" id="statusArea">
+                        <div class="status-message success">
+                            ✅ KaTeX+mhchem レンダリングエンジン準備完了
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Bootstrap 5 JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- KaTeX JavaScript -->
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js" integrity="sha384-cpW21h6RZv/phavutF+AuVYrr+dA8xD9zs6FwLpaCct6O9ctzYFfFr4dgmgccOTx" crossorigin="anonymous"></script>
+    <!-- KaTeX mhchem extension -->
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/mhchem.min.js" integrity="sha384-LIgAiYlGSAdpNC9+YDjDPF6JeS/RRIumtNo0CmyQERZ/+g0h9MbuYQwf/5pQ4Y4M" crossorigin="anonymous"></script>
 
     <script>
-        let chemistryProblems = JSON.parse(localStorage.getItem('chemistryQuestions') || '[]');
-
-        function addProblem(event) {
-            event.preventDefault();
-            
-            const title = document.getElementById('problemTitle').value;
-            const category = document.getElementById('problemCategory').value;
-            const text = document.getElementById('problemText').value;
-            const answer = document.getElementById('problemAnswer').value;
-            const difficulty = document.getElementById('problemDifficulty').value;
-
-            const problem = {
-                id: Date.now(),
-                title,
-                category,
-                text,
-                answer,
-                difficulty,
-                createdAt: new Date().toLocaleDateString('ja-JP')
-            };
-
-            chemistryProblems.push(problem);
-            localStorage.setItem('chemistryQuestions', JSON.stringify(chemistryProblems));
-
-            document.getElementById('problemTitle').value = '';
-            document.getElementById('problemText').value = '';
-            document.getElementById('problemAnswer').value = '';
-
-            displayProblems();
-            
-            // Show success message
-            const alert = document.createElement('div');
-            alert.className = 'alert alert-success alert-dismissible fade show';
-            alert.innerHTML = `
-                <strong>成功!</strong> 化学問題が追加されました。
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            `;
-            document.querySelector('.container-fluid').insertBefore(alert, document.querySelector('.container-fluid').firstChild);
-            
-            setTimeout(() => {
-                alert.remove();
-            }, 3000);
-        }
-
-        function displayProblems() {
-            const container = document.getElementById('problemsList');
-            
-            if (chemistryProblems.length === 0) {
-                container.innerHTML = '<p class="text-muted text-center">まだ問題が登録されていません。</p>';
-                return;
+        // 🚀 革命的KaTeX+mhchem統合化学作成システム
+        class RevolutionaryChemistryKaTeXSystem {
+            constructor() {
+                this.textarea = document.getElementById('mathInput');
+                this.preview = document.getElementById('mathPreview');
+                this.normalizedOutput = document.getElementById('normalizedOutput');
+                this.statusArea = document.getElementById('statusArea');
+                this.currentMode = 'general';
+                this.init();
             }
 
-            const categoryNames = {
-                inorganic: '無機化学',
-                organic: '有機化学',
-                physical: '物理化学',
-                analytical: '分析化学',
-                biochemistry: '生化学'
-            };
+            init() {
+                this.setupLatexButtons();
+                this.setupModeSelector();
+                this.setupSampleChips();
+                this.setupRealtimePreview();
+                this.setupSaveSystem();
+                this.waitForKaTeX();
+            }
 
-            const difficultyNames = {
-                basic: '基礎',
-                standard: '標準',
-                advanced: '発展'
-            };
+            // KaTeX読み込み待機
+            waitForKaTeX() {
+                const checkKaTeX = () => {
+                    if (window.katex && window.katex.__mhchem) {
+                        this.addStatus('✅ KaTeX+mhchem レンダリングエンジン準備完了', 'success');
+                        this.renderInitialMath();
+                    } else if (window.katex) {
+                        // mhchemが読み込まれていない場合は少し待つ
+                        setTimeout(checkKaTeX, 100);
+                    } else {
+                        setTimeout(checkKaTeX, 100);
+                    }
+                };
+                checkKaTeX();
+            }
 
-            const difficultyColors = {
-                basic: 'success',
-                standard: 'warning', 
-                advanced: 'danger'
-            };
+            // 超シンプル・確実なLaTeXボタンシステム
+            setupLatexButtons() {
+                document.querySelectorAll('.latex-btn').forEach(btn => {
+                    btn.addEventListener('touchstart', (e) => {
+                        e.preventDefault();
+                        this.insertLatex(btn.dataset.latex);
+                        this.showButtonFeedback(btn);
+                    }, { passive: false });
 
-            container.innerHTML = chemistryProblems.map(problem => `
-                <div class="problem-item">
-                    <div class="d-flex justify-content-between align-items-start mb-2">
-                        <div class="problem-title">${problem.title}</div>
-                        <span class="badge bg-${difficultyColors[problem.difficulty]}">${difficultyNames[problem.difficulty]}</span>
-                    </div>
-                    <div class="problem-meta">
-                        <i class="fas fa-tag"></i> ${categoryNames[problem.category]} | 
-                        <i class="fas fa-calendar"></i> ${problem.createdAt}
-                    </div>
-                    <div class="problem-content">
-                        <strong>問題:</strong> ${problem.text}<br>
-                        <strong>解答:</strong> ${problem.answer}
-                    </div>
-                </div>
-            `).join('');
+                    btn.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        this.insertLatex(btn.dataset.latex);
+                        this.showButtonFeedback(btn);
+                    });
+                });
+            }
+
+            // モード選択システム
+            setupModeSelector() {
+                document.querySelectorAll('.mode-btn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+                        btn.classList.add('active');
+                        this.currentMode = btn.dataset.mode;
+                        this.updateToolbarForMode(this.currentMode);
+                        this.addStatus(`🧪 モード変更: ${btn.textContent}`, 'success');
+                    });
+                });
+
+                // 初期モードでツールバーを更新
+                this.updateToolbarForMode(this.currentMode);
+            }
+
+            // モードに応じてツールバー表示を更新
+            updateToolbarForMode(mode) {
+                const toolbar = document.getElementById('latexToolbar');
+                const allButtons = toolbar.querySelectorAll('.latex-btn');
+
+                // すべてのボタンを表示
+                allButtons.forEach(btn => btn.style.display = 'flex');
+
+                // モードに応じて関連度の低いボタンを薄く表示
+                switch(mode) {
+                    case 'general':
+                        this.highlightButtons([
+                            '\\ce{H2O}', '\\ce{CO2}', '\\ce{NH3}', '\\ce{A + B -> C + D}',
+                            '\\ce{H+}', '\\ce{OH-}', '\\ce{(s)}', '\\ce{(l)}', '\\ce{(g)}', '\\ce{(aq)}',
+                            'PV = nRT', 'pH', '\\Delta', '\\frac{}{}'
+                        ]);
+                        break;
+                    case 'organic':
+                        this.highlightButtons([
+                            '\\ce{CH4}', '\\ce{C2H6}', '\\ce{C6H6}',
+                            '\\ce{A + B -> C + D}', '\\ce{->[heat]}',
+                            '\\frac{}{}', '^{}', '_{}', '\\Delta'
+                        ]);
+                        break;
+                    case 'inorganic':
+                        this.highlightButtons([
+                            '\\ce{H2O}', '\\ce{CO2}', '\\ce{NH3}',
+                            '\\ce{H+}', '\\ce{OH-}', '\\ce{SO4^2-}', '\\ce{Ca^2+}', '\\ce{Cl-}',
+                            '\\ce{(s)}', '\\ce{(l)}', '\\ce{(g)}', '\\ce{(aq)}',
+                            '\\ce{<->}', '\\ce{<=>>}'
+                        ]);
+                        break;
+                    case 'physical':
+                        this.highlightButtons([
+                            'R', 'N_A', 'k_B', 'F', 'h', 'c',
+                            '\\frac{d}{dt}', '\\frac{dC}{dt}', '\\int',
+                            'e^{}', '\\ln', '\\log', '\\Delta', '\\partial'
+                        ]);
+                        break;
+                    case 'analytical':
+                        this.highlightButtons([
+                            '\\frac{}{}', '\\times', '\\pm',
+                            '\\leq', '\\geq', '\\approx',
+                            '\\sum_{i=1}^{n}', '\\log', '\\ln'
+                        ]);
+                        break;
+                }
+            }
+
+            // 指定されたボタンをハイライト
+            highlightButtons(latexCodes) {
+                const toolbar = document.getElementById('latexToolbar');
+                const allButtons = toolbar.querySelectorAll('.latex-btn');
+
+                allButtons.forEach(btn => {
+                    const latex = btn.dataset.latex;
+                    if (latexCodes.includes(latex)) {
+                        btn.style.opacity = '1';
+                        btn.style.order = '0';
+                    } else {
+                        btn.style.opacity = '0.4';
+                        btn.style.order = '1';
+                    }
+                });
+            }
+
+            // サンプル数式チップ
+            setupSampleChips() {
+                document.querySelectorAll('.sample-chip').forEach(chip => {
+                    chip.addEventListener('click', () => {
+                        const sample = chip.dataset.sample;
+                        this.textarea.value = sample;
+                        this.textarea.focus();
+                        this.updatePreview();
+                        this.addStatus(`📋 サンプル挿入: ${chip.textContent}`, 'success');
+                    });
+                });
+            }
+
+            // 即座のボタンフィードバック
+            showButtonFeedback(btn) {
+                btn.classList.add('flash');
+                setTimeout(() => {
+                    btn.classList.remove('flash');
+                }, 200);
+
+                if (navigator.vibrate) {
+                    navigator.vibrate(15);
+                }
+            }
+
+            // 確実なLaTeX挿入
+            insertLatex(latex) {
+                if (!this.textarea) return;
+
+                const start = this.textarea.selectionStart;
+                const end = this.textarea.selectionEnd;
+                const text = this.textarea.value;
+                const selectedText = text.substring(start, end);
+
+                let insertion;
+                if (latex.includes('{}')) {
+                    insertion = selectedText ?
+                        latex.replace('{}', selectedText) :
+                        latex.replace('{}', '');
+                } else {
+                    insertion = latex + ' ';
+                }
+
+                this.textarea.value = text.substring(0, start) + insertion + text.substring(end);
+
+                const newPos = start + insertion.length;
+                this.textarea.focus();
+                this.textarea.setSelectionRange(newPos, newPos);
+
+                this.updatePreview();
+            }
+
+            // リアルタイムプレビューシステム
+            setupRealtimePreview() {
+                if (!this.textarea) return;
+
+                this.textarea.addEventListener('input', () => {
+                    this.updatePreview();
+                });
+
+                this.updatePreview();
+            }
+
+            updatePreview() {
+                if (!this.preview || !this.textarea) return;
+
+                const text = this.textarea.value.trim();
+
+                if (!text) {
+                    this.preview.innerHTML = '<div class="preview-placeholder">化学式を入力すると、ここにKaTeX+mhchemでレンダリングされた結果が表示されます</div>';
+                    this.normalizedOutput.textContent = '正規化された化学式がここに表示されます';
+                    return;
+                }
+
+                // 正規化処理（簡略版）
+                const normalized = this.normalizeExpression(text);
+                this.normalizedOutput.textContent = normalized;
+
+                // KaTeX レンダリング
+                this.renderWithKaTeX(text);
+            }
+
+            // 数式正規化（簡略版）
+            normalizeExpression(expr) {
+                try {
+                    // 基本的な正規化
+                    let normalized = expr
+                        .replace(/\\cdot/g, '*')
+                        .replace(/\\times/g, '*')
+                        .replace(/\\div/g, '/')
+                        .replace(/\s+/g, ' ')
+                        .trim();
+
+                    return `[${this.currentMode}] ${normalized}`;
+                } catch (error) {
+                    return `[エラー] ${expr}`;
+                }
+            }
+
+            // KaTeX レンダリング
+            renderWithKaTeX(text) {
+                if (!window.katex) {
+                    this.preview.innerHTML = `<div style="color: #ef4444;">KaTeX読み込み中...</div>`;
+                    return;
+                }
+
+                try {
+                    // displaystyle を自動追加（mhchem式以外）
+                    let processedText = text;
+                    if (!text.includes('\\ce{') && !text.includes('\\displaystyle') && !text.includes('\\textstyle')) {
+                        processedText = '\\displaystyle ' + text;
+                    }
+
+                    // インライン数式かブロック数式かを判定
+                    const isDisplayMode = text.includes('\\\\') || text.includes('\\begin') || text.length > 30;
+
+                    const rendered = window.katex.renderToString(processedText, {
+                        throwOnError: false,
+                        displayMode: isDisplayMode,
+                        strict: false,
+                        trust: true // mhchemで必要
+                    });
+
+                    this.preview.innerHTML = rendered;
+                    this.addStatus('✅ レンダリング完了', 'success');
+                } catch (error) {
+                    this.preview.innerHTML = `<div style="color: #ef4444;">レンダリングエラー: ${error.message}</div>`;
+                    this.addStatus(`❌ レンダリングエラー: ${error.message}`, 'error');
+                }
+            }
+
+            // 初期数式レンダリング
+            renderInitialMath() {
+                document.querySelectorAll('.latex-btn').forEach(btn => {
+                    const latex = btn.innerHTML;
+                    if (latex.includes('$')) {
+                        try {
+                            let mathExpr = latex.replace(/\$/g, '');
+                            // mhchem式以外にdisplaystyleを追加
+                            if (!mathExpr.includes('\\ce{') && !mathExpr.includes('\\displaystyle') && !mathExpr.includes('\\textstyle')) {
+                                mathExpr = '\\displaystyle ' + mathExpr;
+                            }
+                            const rendered = window.katex.renderToString(mathExpr, {
+                                throwOnError: false,
+                                displayMode: false,
+                                trust: true
+                            });
+                            btn.innerHTML = rendered;
+                        } catch (error) {
+                            // エラーの場合は元のテキストのまま
+                        }
+                    }
+                });
+            }
+
+            // 状態メッセージ
+            addStatus(message, type = 'success') {
+                const statusEl = document.createElement('div');
+                statusEl.className = `status-message ${type}`;
+                statusEl.textContent = message;
+
+                // 古いメッセージを削除
+                const oldMessages = this.statusArea.querySelectorAll('.status-message');
+                if (oldMessages.length >= 3) {
+                    oldMessages[0].remove();
+                }
+
+                this.statusArea.appendChild(statusEl);
+
+                // 3秒後に削除
+                setTimeout(() => {
+                    if (statusEl.parentNode) {
+                        statusEl.remove();
+                    }
+                }, 3000);
+            }
+
+            // 保存システム
+            setupSaveSystem() {
+                const saveBtn = document.getElementById('saveButton');
+                if (saveBtn) {
+                    saveBtn.addEventListener('click', () => {
+                        this.saveQuestion();
+                    });
+                }
+            }
+
+            saveQuestion() {
+                const title = document.getElementById('questionTitle').value.trim();
+                const field = document.getElementById('fieldCode').value;
+                const content = this.textarea.value.trim();
+
+                if (!title || !field || !content) {
+                    this.showMessage('すべてのフィールドを入力してください', 'error');
+                    return;
+                }
+
+                const question = {
+                    id: Date.now(),
+                    title,
+                    field,
+                    content,
+                    normalized: this.normalizeExpression(content),
+                    mode: this.currentMode,
+                    created: new Date().toISOString()
+                };
+
+                const questions = JSON.parse(localStorage.getItem('chemistryQuestions') || '[]');
+                questions.push(question);
+                localStorage.setItem('chemistryQuestions', JSON.stringify(questions));
+
+                this.showMessage('化学問題を保存しました！', 'success');
+                this.addStatus('🧪 問題保存完了', 'success');
+                this.clearForm();
+            }
+
+            showMessage(text, type) {
+                const messageEl = document.getElementById('saveMessage');
+                if (!messageEl) return;
+
+                const className = type === 'error' ? 'error-message' : 'success-message';
+                messageEl.innerHTML = `<div class="${className}" style="margin-top: 8px; padding: 6px; border-radius: 4px;">${text}</div>`;
+
+                setTimeout(() => {
+                    messageEl.innerHTML = '';
+                }, 3000);
+            }
+
+            clearForm() {
+                document.getElementById('questionTitle').value = '';
+                document.getElementById('fieldCode').value = '';
+                this.textarea.value = '';
+                this.updatePreview();
+            }
         }
 
-        document.addEventListener('DOMContentLoaded', displayProblems);
+        // システム初期化
+        document.addEventListener('DOMContentLoaded', () => {
+            window.revolutionaryChemistryKaTeXSystem = new RevolutionaryChemistryKaTeXSystem();
+        });
     </script>
 </body>
 </html>
