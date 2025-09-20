@@ -999,7 +999,7 @@ x^2 + 2x + 1 = 0
                 this.preview = document.getElementById('mathPreview');
                 this.normalizedOutput = document.getElementById('normalizedOutput');
                 this.statusArea = document.getElementById('statusArea');
-                this.currentMode = 'generic';
+                this.currentMode = 'algebra';
                 this.init();
             }
 
@@ -1049,8 +1049,83 @@ x^2 + 2x + 1 = 0
                         document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
                         btn.classList.add('active');
                         this.currentMode = btn.dataset.mode;
+                        this.updateToolbarForMode(this.currentMode);
                         this.addStatus(`📊 モード変更: ${btn.textContent}`, 'success');
                     });
+                });
+
+                // 初期モードでツールバーを更新
+                this.updateToolbarForMode(this.currentMode);
+            }
+
+            // モードに応じてツールバー表示を更新
+            updateToolbarForMode(mode) {
+                const toolbar = document.getElementById('latexToolbar');
+                const allButtons = toolbar.querySelectorAll('.latex-btn');
+
+                // すべてのボタンを表示
+                allButtons.forEach(btn => btn.style.display = 'flex');
+
+                // モードに応じて関連度の低いボタンを薄く表示
+                switch(mode) {
+                    case 'algebra':
+                        this.highlightButtons([
+                            '\\frac{}{}', '^{}', '_{}', '\\sqrt{}', '\\sqrt[n]{}',
+                            '\\sum_{i=1}^{n}', '\\prod_{i=1}^{n}', '\\binom{n}{k}',
+                            '\\alpha', '\\beta', '\\gamma', '\\delta', '\\lambda',
+                            '\\in', '\\subset', '\\cup', '\\cap', '\\emptyset'
+                        ]);
+                        break;
+                    case 'analysis':
+                        this.highlightButtons([
+                            '\\int', '\\int_{a}^{b}', '\\iint', '\\oint',
+                            '\\lim_{x \\to a}', '\\lim_{n \\to \\infty}',
+                            '\\frac{d}{dx}', '\\frac{dy}{dx}', '\\frac{d^2}{dx^2}',
+                            '\\frac{\\partial}{\\partial x}', '\\nabla',
+                            '\\sin', '\\cos', '\\tan', '\\log', '\\ln', 'e^{}'
+                        ]);
+                        break;
+                    case 'geometry':
+                        this.highlightButtons([
+                            '\\angle', '\\triangle', '\\parallel', '\\perp',
+                            '\\sin', '\\cos', '\\tan', '\\arcsin', '\\arccos', '\\arctan',
+                            '\\pi', '\\theta', '\\alpha', '\\beta', '\\gamma',
+                            '\\sqrt{}', '^{}', '\\circ', '\\approx', '\\sim'
+                        ]);
+                        break;
+                    case 'probability':
+                        this.highlightButtons([
+                            'P(A)', 'E[X]', '\\text{Var}(X)', '\\binom{n}{k}', 'n!',
+                            '\\cup', '\\cap', '\\emptyset', '\\subset',
+                            '\\sum_{i=1}^{n}', '\\prod_{i=1}^{n}',
+                            '\\bar{x}', '\\hat{x}', '\\leq', '\\geq'
+                        ]);
+                        break;
+                    case 'statistics':
+                        this.highlightButtons([
+                            '\\bar{x}', '\\hat{x}', '\\tilde{x}',
+                            'E[X]', '\\text{Var}(X)', '\\sigma', '\\mu',
+                            '\\sum_{i=1}^{n}', '\\frac{}{}', '\\sqrt{}',
+                            '\\leq', '\\geq', '\\approx', '\\pm'
+                        ]);
+                        break;
+                }
+            }
+
+            // 指定されたボタンをハイライト
+            highlightButtons(latexCodes) {
+                const toolbar = document.getElementById('latexToolbar');
+                const allButtons = toolbar.querySelectorAll('.latex-btn');
+
+                allButtons.forEach(btn => {
+                    const latex = btn.dataset.latex;
+                    if (latexCodes.includes(latex)) {
+                        btn.style.opacity = '1';
+                        btn.style.order = '0';
+                    } else {
+                        btn.style.opacity = '0.4';
+                        btn.style.order = '1';
+                    }
                 });
             }
 
