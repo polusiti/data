@@ -345,13 +345,6 @@
                     <button class="mode-btn" data-mode="modern">現代物理</button>
                 </div>
 
-                <!-- 座標軸設定 -->
-                <div class="section-title"><i class="icofont-ruler-compass-alt"></i> 表示設定</div>
-                <div class="axis-controls" style="display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap;">
-                    <button class="mode-btn active" id="axisOn" style="font-size: 12px; padding: 6px 12px;">座標軸あり</button>
-                    <button class="mode-btn" id="axisOff" style="font-size: 12px; padding: 6px 12px;">座標軸なし</button>
-                </div>
-
                 <!-- エディタ制御 -->
                 <div class="section-title"><i class="icofont-file-code"></i> エディタ制御</div>
                 <div class="editor-controls" style="display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap;">
@@ -428,7 +421,6 @@
                 this.currentMode = 'mechanics';
                 this.editor = null;
                 this.boardCounter = 0;
-                this.showAxis = true;
 
                 this.init();
             }
@@ -473,7 +465,7 @@
                         // テスト用ボード作成
                         const testBoard = JXG.JSXGraph.initBoard('test-board', {
                             boundingbox: [-4, 4, 4, -4],
-                            axis: this.showAxis,
+                            axis: false,
                             showCopyright: false,
                             showNavigation: false
                         });
@@ -552,22 +544,6 @@
                     });
                 });
 
-                // 座標軸制御
-                document.getElementById('axisOn').addEventListener('click', () => {
-                    document.querySelectorAll('.axis-controls .mode-btn').forEach(b => b.classList.remove('active'));
-                    document.getElementById('axisOn').classList.add('active');
-                    this.showAxis = true;
-                    this.log('座標軸表示: ON');
-                    this.renderPhysicsTikZ();
-                });
-
-                document.getElementById('axisOff').addEventListener('click', () => {
-                    document.querySelectorAll('.axis-controls .mode-btn').forEach(b => b.classList.remove('active'));
-                    document.getElementById('axisOff').classList.add('active');
-                    this.showAxis = false;
-                    this.log('座標軸表示: OFF');
-                    this.renderPhysicsTikZ();
-                });
 
                 // エディタ制御
                 document.getElementById('clearCode').addEventListener('click', () => {
@@ -664,7 +640,40 @@
                     '振り子': '% 振り子\n\\draw[thick] (0,3) -- (0,0);\n\\draw[thick] (0,3) -- (2,1);\n\\draw (2,1) circle (0.2);\n\\draw[->] (2,1) -- (2,0) node[below] {$mg$};\n\\draw[->] (2,1) -- (1,2) node[above left] {$T$};\n\\draw (0,2.5) arc (270:315:0.5) node[midway,right] {$\\theta$};',
                     '電場': '% 電場\n\\draw[red] (0,0) circle (0.2) node {+};\n\\foreach \\a in {0,30,60,90,120,150,180,210,240,270,300,330}\n  \\draw[->] (0,0) -- (\\a:1.5);\n\\draw (0,-2.5) node {点電荷の電場};',
                     '磁場': '% 磁場\n\\draw[thick,blue] (0,-2) -- (0,2) node[above] {導線};\n\\foreach \\r in {0.5,1,1.5} {\n  \\draw[red] (0,0) circle (\\r);\n}\n\\draw (2,0) node {磁場};\n\\draw[->] (0.5,0) arc (0:45:0.5);\n\\draw (0.7,0.2) node {$B$};',
-                    '回路': '% 電気回路\n\\draw[thick] (0,0) -- (4,0) -- (4,2) -- (0,2) -- cycle;\n\\draw (1,0) -- (1,0.3) -- (1.2,0.5) -- (1,0.7) -- (0.8,0.9) -- (1,1.1) -- (1.2,1.3) -- (1,1.5) -- (1,2);\n\\draw (3,0.8) rectangle (3.4,1.2) node[right] {R};\n\\draw (0.5,1.8) -- (0.5,2.2) node[above] {+};\n\\draw (0.5,0.2) -- (0.5,-0.2) node[below] {-};',
+                    '回路': `% 電気回路 - コンデンサー回路例
+\\begin{tikzpicture}[
+    font=\\sffamily,
+    C/.style={capacitor, l^=\\text{#1}},
+    S/.style={spst, l^=\\text{#1}},
+    node font=\\Large
+  ]
+
+  \\coordinate (P) at (0,4);
+  \\coordinate (S_gnd) at (0,0);
+  \\coordinate (A) at (5,4);
+  \\coordinate (B) at (5,0);
+  \\coordinate (R) at (9,4);
+  \\coordinate (T) at (9,0);
+
+  \\draw (S_gnd) to[battery1, l_=$E$] (P);
+  \\draw (A) to[C=$C_2$] (B);
+  \\draw (R) to[C=$C_3$] (T);
+
+  \\draw (P) to[short, -o] ++(1.5,0) coordinate (S1_in);
+  \\draw (S1_in) to[S=$S_1$] ++(2,0) coordinate (S1_out);
+  \\draw (S1_out) to[C=$C_1$] (A);
+
+  \\draw (A) to[short, o-o] ++(1.5,0) coordinate (S2_in);
+  \\draw (S2_in) to[S=$S_2$] ++(2,0) coordinate (S2_out);
+  \\draw (S2_out) to[short, -o] (R);
+
+  \\draw (S_gnd) -- (B) -- (T);
+
+  \\node[above=2pt of A] {A};
+  \\node[below=2pt of B] {B};
+
+  \\node[below=0.8cm of B] {図 1};
+\\end{tikzpicture}`,
                     '波動': '% 波動\n\\draw[->] (0,0) -- (6,0) node[right] {$x$};\n\\draw[->] (0,-2) -- (0,2) node[above] {$y$};\n\\draw[blue,thick,domain=0:5.5,smooth] plot (\\x, sin(\\x*180/3.14159*2));\n\\draw (3,-1.5) node {$y = A\\sin(kx - \\omega t)$};',
                     '干渉': '% 干渉\n\\draw[blue] (0,1) -- (4,1);\n\\draw[red] (0,-1) -- (4,-1);\n\\draw[purple,thick] (2,0) -- (4,0);\n\\draw (0,1.2) node {波1};\n\\draw (0,-1.2) node {波2};\n\\draw (3,0.2) node {合成波};',
                     '回折': '% 回折\n\\draw[thick] (0,-2) -- (0,-0.5);\n\\draw[thick] (0,0.5) -- (0,2);\n\\draw[blue] (-2,0) -- (0,0);\n\\draw[red] (0,0) -- (2,1);\n\\draw[red] (0,0) -- (2,0);\n\\draw[red] (0,0) -- (2,-1);\n\\draw (-1,0.2) node {入射波};\n\\draw (1.5,0.2) node {回折波};',
@@ -815,7 +824,7 @@
 
                     const board = JXG.JSXGraph.initBoard(boardId, {
                         boundingbox: [-5, 5, 5, -5],
-                        axis: this.showAxis,
+                        axis: false,
                         showCopyright: false,
                         showNavigation: false
                     });
