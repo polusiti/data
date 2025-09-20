@@ -942,9 +942,9 @@ K = \frac{[\ce{H+}][\ce{OH-}]}{[\ce{H2O}]}
     </div>
 
     <!-- KaTeX JavaScript -->
-    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js" integrity="sha384-cpW21h6RZv/phavutF+AuVYrr+dA8xD9zs6FwLpaCct6O9ctzYFfFr4dgmgccOTx" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js" integrity="sha384-cpW21h6RZv/phavutF+AuVYrr+dA8xD9zs6FwLpaCct6O9ctzYFfFr4dgmgccOTx" crossorigin="anonymous"></script>
     <!-- KaTeX mhchem extension -->
-    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/mhchem.min.js" integrity="sha384-LIgAiYlGSAdpNC9+YDjDPF6JeS/RRIumtNo0CmyQERZ/+g0h9MbuYQwf/5pQ4Y4M" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/mhchem.min.js" integrity="sha384-LIgAiYlGSAdpNC9+YDjDPF6JeS/RRIumtNo0CmyQERZ/+g0h9MbuYQwf/5pQ4Y4M" crossorigin="anonymous"></script>
 
     <script>
         // 🚀 革命的KaTeX+mhchem統合化学作成システム
@@ -973,18 +973,27 @@ K = \frac{[\ce{H+}][\ce{OH-}]}{[\ce{H2O}]}
                     if (window.katex) {
                         // mhchemのテストレンダリングで確認
                         try {
-                            window.katex.renderToString('\\ce{H2O}', { throwOnError: true, trust: true });
-                            this.addStatus('✅ KaTeX+mhchem レンダリングエンジン準備完了', 'success');
-                            this.renderInitialMath();
+                            const testResult = window.katex.renderToString('\\ce{H2O}', {
+                                throwOnError: true,
+                                trust: true,
+                                strict: false
+                            });
+                            if (testResult && testResult.includes('H') && testResult.includes('O')) {
+                                this.addStatus('✅ KaTeX+mhchem レンダリングエンジン準備完了', 'success');
+                                this.renderInitialMath();
+                                return;
+                            }
                         } catch (error) {
-                            // mhchemがまだ読み込まれていない
-                            setTimeout(checkKaTeX, 100);
+                            console.warn('mhchem test failed:', error.message);
                         }
+                        // mhchemがまだ読み込まれていない
+                        setTimeout(checkKaTeX, 200);
                     } else {
                         setTimeout(checkKaTeX, 100);
                     }
                 };
-                checkKaTeX();
+                // 初回は少し待ってから開始
+                setTimeout(checkKaTeX, 500);
             }
 
             // 超シンプル・確実なLaTeXボタンシステム
@@ -1206,11 +1215,7 @@ K = \frac{[\ce{H+}][\ce{OH-}]}{[\ce{H2O}]}
                         throwOnError: false,
                         displayMode: isDisplayMode,
                         strict: false,
-                        trust: true, // mhchemで必要
-                        macros: {
-                            // mhchemの追加サポート
-                            "\\ce": "\\ce"
-                        }
+                        trust: true // mhchemで必要
                     });
 
                     this.preview.innerHTML = rendered;
@@ -1241,9 +1246,7 @@ K = \frac{[\ce{H+}][\ce{OH-}]}{[\ce{H2O}]}
                                 throwOnError: false,
                                 displayMode: false,
                                 trust: true,
-                                macros: {
-                                    "\\ce": "\\ce"
-                                }
+                                strict: false
                             });
                             btn.innerHTML = rendered;
                         } catch (error) {
