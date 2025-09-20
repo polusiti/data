@@ -24,8 +24,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/material-darker.min.css">
 
-    <!-- IcoFont Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/icofont/1.0.1/icofont.min.css">
+    <!-- Font Awesome Icons (IcoFontの代替) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 
     <style>
         * {
@@ -291,14 +291,14 @@
 
         <header>
             <div class="header-badge">v1.0 Physics</div>
-            <h1><i class="icofont-lightning-ray"></i> Physics TikZ Creator v1.0</h1>
-            <p class="subtitle"><i class="icofont-chart-line"></i> 物理図制作専用システム - JSXGraph + リアルタイムレンダリング</p>
+            <h1><i class="fas fa-bolt"></i> Physics TikZ Creator v1.0</h1>
+            <p class="subtitle"><i class="fas fa-chart-line"></i> 物理図制作専用システム - JSXGraph + リアルタイムレンダリング</p>
         </header>
 
         <div class="main-grid">
             <!-- 入力エリア -->
             <div class="panel">
-                <div class="panel-header"><i class="icofont-file-code"></i> TikZコード入力</div>
+                <div class="panel-header"><i class="fas fa-code"></i> TikZコード入力</div>
                 <div class="panel-content">
                     <div class="input-area">
                         <textarea id="tikzInput" placeholder="物理図のTikZコードを入力してください...
@@ -314,7 +314,7 @@
 
             <!-- プレビューエリア -->
             <div class="panel">
-                <div class="panel-header"><i class="icofont-eye-alt"></i> プレビュー</div>
+                <div class="panel-header"><i class="fas fa-eye"></i> プレビュー</div>
                 <div class="panel-content">
                     <div id="preview" class="preview-area">
                         <p style="color: #92400e; margin-top: 100px;">
@@ -333,10 +333,10 @@
 
         <!-- ツールパネル -->
         <div class="panel tools-panel">
-            <div class="panel-header"><i class="icofont-tools-alt-2"></i> 物理図制作ツール</div>
+            <div class="panel-header"><i class="fas fa-tools"></i> 物理図制作ツール</div>
             <div class="panel-content">
                 <!-- モード選択 -->
-                <div class="section-title"><i class="icofont-lightning-ray"></i> 物理分野</div>
+                <div class="section-title"><i class="fas fa-bolt"></i> 物理分野</div>
                 <div class="mode-buttons">
                     <button class="mode-btn active" data-mode="mechanics">力学</button>
                     <button class="mode-btn" data-mode="electromagnetism">電磁気</button>
@@ -346,22 +346,22 @@
                 </div>
 
                 <!-- エディタ制御 -->
-                <div class="section-title"><i class="icofont-file-code"></i> エディタ制御</div>
+                <div class="section-title"><i class="fas fa-code"></i> エディタ制御</div>
                 <div class="editor-controls" style="display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap;">
-                    <button class="mode-btn" id="clearCode" style="font-size: 12px; padding: 6px 12px; background: #ef4444; color: white; border-color: #ef4444;"><i class="icofont-ui-delete"></i> コードクリア</button>
-                    <button class="mode-btn" id="exportPNG" style="font-size: 12px; padding: 6px 12px; background: #10b981; color: white; border-color: #10b981;"><i class="icofont-camera"></i> PNG出力</button>
-                    <button class="mode-btn" id="exportSVG" style="font-size: 12px; padding: 6px 12px; background: #f59e0b; color: white; border-color: #f59e0b;"><i class="icofont-file-image"></i> SVG出力</button>
+                    <button class="mode-btn" id="clearCode" style="font-size: 12px; padding: 6px 12px; background: #ef4444; color: white; border-color: #ef4444;"><i class="fas fa-trash"></i> コードクリア</button>
+                    <button class="mode-btn" id="exportPNG" style="font-size: 12px; padding: 6px 12px; background: #10b981; color: white; border-color: #10b981;"><i class="fas fa-camera"></i> PNG出力</button>
+                    <button class="mode-btn" id="exportSVG" style="font-size: 12px; padding: 6px 12px; background: #f59e0b; color: white; border-color: #f59e0b;"><i class="fas fa-image"></i> SVG出力</button>
                 </div>
 
                 <!-- ツールバー -->
-                <div class="section-title"><i class="icofont-tools"></i> 物理図ツール</div>
+                <div class="section-title"><i class="fas fa-tools"></i> 物理図ツール</div>
                 <div id="toolbar" class="toolbar">
                     <!-- JavaScriptで動的に生成 -->
                 </div>
 
                 <!-- サンプル -->
                 <div class="samples">
-                    <div class="section-title"><i class="icofont-file-spreadsheet"></i> 物理テンプレート</div>
+                    <div class="section-title"><i class="fas fa-file-alt"></i> 物理テンプレート</div>
                     <div class="sample-grid">
                         <button class="sample-btn" data-sample="力の合成">力の合成</button>
                         <button class="sample-btn" data-sample="斜面">斜面運動</button>
@@ -380,18 +380,18 @@
 
                 <!-- システム情報パネル -->
                 <div class="info-panel" style="margin-top: 16px;">
-                    <div class="section-title"><i class="icofont-info-circle"></i> システム情報</div>
+                    <div class="section-title"><i class="fas fa-info-circle"></i> システム情報</div>
                     <div style="background: #fffbeb; padding: 12px; border-radius: 8px; font-size: 12px; color: #92400e;">
-                        <div><i class="icofont-web"></i> Domain: <strong>data.allfrom0.top/physics/tikz</strong></div>
-                        <div><i class="icofont-rocket-alt-1"></i> Version: <strong>v1.0 Physics</strong></div>
-                        <div><i class="icofont-flash"></i> Engine: <strong>JSXGraph + CodeMirror</strong></div>
-                        <div><i class="icofont-chart-bar-graph"></i> Part of: <strong>Data Manager Education Suite</strong></div>
+                        <div><i class="fas fa-globe"></i> Domain: <strong>data.allfrom0.top/physics/tikz</strong></div>
+                        <div><i class="fas fa-rocket"></i> Version: <strong>v1.0 Physics</strong></div>
+                        <div><i class="fas fa-bolt"></i> Engine: <strong>JSXGraph + CodeMirror</strong></div>
+                        <div><i class="fas fa-chart-bar"></i> Part of: <strong>Data Manager Education Suite</strong></div>
                     </div>
                 </div>
 
                 <!-- デバッグコンソール -->
                 <div class="debug-panel" style="margin-top: 16px;">
-                    <div class="section-title"><i class="icofont-bug"></i> デバッグコンソール</div>
+                    <div class="section-title"><i class="fas fa-bug"></i> デバッグコンソール</div>
                     <div id="debugOutput" style="background: #1e1e1e; color: #fff; padding: 12px; border-radius: 8px; height: 120px; overflow-y: auto; font-family: monospace; font-size: 12px;">
                         <div style="color: #fbbf24;">Physics TikZ Creator v1.0 初期化中...</div>
                     </div>
@@ -699,7 +699,8 @@
 
                 for (let line of lines) {
                     line = line.trim();
-                    if (line.startsWith('\\draw') || line.startsWith('\\foreach')) {
+                    if (line.startsWith('\\draw') || line.startsWith('\\foreach') ||
+                        line.startsWith('\\coordinate') || line.startsWith('\\node')) {
                         const cmd = this.parsePhysicsDrawCommand(line);
                         if (cmd) commands.push(cmd);
                     }
@@ -709,8 +710,88 @@
             }
 
             parsePhysicsDrawCommand(line) {
+                // circuitikz コマンド（電気回路専用）
+                if (line.includes('to[') && (line.includes('battery') || line.includes('C=') || line.includes('S=') || line.includes('short'))) {
+                    const coords = this.extractCoordinates(line);
+                    if (coords.length >= 2) {
+                        let componentType = 'wire';
+                        let label = '';
+
+                        if (line.includes('battery')) {
+                            componentType = 'battery';
+                            const labelMatch = line.match(/l_?=\$([^$]*)\$/);
+                            if (labelMatch) label = labelMatch[1];
+                        } else if (line.includes('C=')) {
+                            componentType = 'capacitor';
+                            const labelMatch = line.match(/C=\$([^$]*)\$/);
+                            if (labelMatch) label = labelMatch[1];
+                        } else if (line.includes('S=')) {
+                            componentType = 'switch';
+                            const labelMatch = line.match(/S=\$([^$]*)\$/);
+                            if (labelMatch) label = labelMatch[1];
+                        } else if (line.includes('short')) {
+                            componentType = 'wire';
+                        }
+
+                        return {
+                            type: 'circuit_component',
+                            componentType: componentType,
+                            start: coords[0],
+                            end: coords[1],
+                            label: label,
+                            color: this.extractColor(line) || 'black'
+                        };
+                    }
+                }
+
+                // coordinate コマンド（座標定義）
+                if (line.includes('\\coordinate')) {
+                    const match = line.match(/\\coordinate\s*\(([^)]+)\)\s*at\s*\(([^)]+)\)/);
+                    if (match) {
+                        const name = match[1];
+                        const coords = match[2].split(',').map(s => parseFloat(s.trim()));
+                        if (coords.length >= 2) {
+                            return {
+                                type: 'coordinate',
+                                name: name,
+                                position: coords,
+                                color: 'transparent'
+                            };
+                        }
+                    }
+                }
+
+                // node コマンド（テキストラベル）
+                if (line.includes('\\node')) {
+                    const positionMatch = line.match(/\[([^\]]*)\]\s*at\s*\(([^)]+)\)\s*\{([^}]*)\}/);
+                    if (positionMatch) {
+                        const position = positionMatch[2].split(',').map(s => parseFloat(s.trim()));
+                        const text = positionMatch[3];
+                        if (position.length >= 2) {
+                            return {
+                                type: 'text',
+                                position: position,
+                                text: text,
+                                color: this.extractColor(line) || 'black'
+                            };
+                        }
+                    }
+
+                    // 相対位置のnode
+                    const relativeMatch = line.match(/\\node\[([^\]]*)\]\s*\{([^}]*)\}/);
+                    if (relativeMatch) {
+                        const text = relativeMatch[2];
+                        return {
+                            type: 'text',
+                            position: [0, 0], // デフォルト位置
+                            text: text,
+                            color: this.extractColor(line) || 'black'
+                        };
+                    }
+                }
+
                 // 物理ベクトル（矢印）
-                if (line.includes('->') && !line.includes('domain')) {
+                if (line.includes('->') && !line.includes('domain') && !line.includes('to[')) {
                     const coords = this.extractCoordinates(line);
                     if (coords.length >= 2) {
                         const color = this.extractColor(line) || 'blue';
@@ -803,15 +884,31 @@
 
             extractCoordinates(line) {
                 const coords = [];
-                const matches = line.match(/\((.*?),(.*?)\)/g);
-                if (matches) {
-                    for (let match of matches) {
+
+                // 通常の座標 (x,y) の抽出
+                const normalMatches = line.match(/\(([^)]+)\)/g);
+                if (normalMatches) {
+                    for (let match of normalMatches) {
                         const coord = match.replace(/[()]/g, '').split(',');
-                        if (!isNaN(coord[0]) && !isNaN(coord[1])) {
-                            coords.push([parseFloat(coord[0]), parseFloat(coord[1])]);
+                        if (coord.length >= 2) {
+                            const x = parseFloat(coord[0].trim());
+                            const y = parseFloat(coord[1].trim());
+                            if (!isNaN(x) && !isNaN(y)) {
+                                coords.push([x, y]);
+                            }
                         }
                     }
                 }
+
+                // coordinate定義の抽出
+                const coordinateMatches = line.match(/coordinate\s*\(([^)]+)\)/g);
+                if (coordinateMatches) {
+                    for (let match of coordinateMatches) {
+                        // これは名前付き座標なので、位置は別途処理
+                        // ここでは座標値は抽出しない
+                    }
+                }
+
                 return coords;
             }
 
@@ -830,7 +927,101 @@
                     });
 
                     for (let cmd of commands) {
-                        if (cmd.type === 'arrow') {
+                        if (cmd.type === 'circuit_component') {
+                            // 回路コンポーネントの描画
+                            const p1 = board.create('point', cmd.start, {visible: false});
+                            const p2 = board.create('point', cmd.end, {visible: false});
+
+                            // 基本の線を描画
+                            const line = board.create('segment', [p1, p2], {
+                                strokeColor: cmd.color,
+                                strokeWidth: 3
+                            });
+
+                            // コンポーネント固有の装飾
+                            const midX = (cmd.start[0] + cmd.end[0]) / 2;
+                            const midY = (cmd.start[1] + cmd.end[1]) / 2;
+
+                            if (cmd.componentType === 'battery') {
+                                // バッテリーシンボル（簡略版）
+                                const perpX = -(cmd.end[1] - cmd.start[1]) * 0.2;
+                                const perpY = (cmd.end[0] - cmd.start[0]) * 0.2;
+
+                                board.create('segment', [
+                                    [midX - perpX/2, midY - perpY/2],
+                                    [midX + perpX/2, midY + perpY/2]
+                                ], {
+                                    strokeColor: cmd.color,
+                                    strokeWidth: 4
+                                });
+
+                                board.create('segment', [
+                                    [midX + perpX/4 - perpX/2, midY + perpY/4 - perpY/2],
+                                    [midX - perpX/4 + perpX/2, midY - perpY/4 + perpY/2]
+                                ], {
+                                    strokeColor: cmd.color,
+                                    strokeWidth: 2
+                                });
+                            } else if (cmd.componentType === 'capacitor') {
+                                // コンデンサーシンボル（平行線）
+                                const perpX = -(cmd.end[1] - cmd.start[1]) * 0.15;
+                                const perpY = (cmd.end[0] - cmd.start[0]) * 0.15;
+
+                                board.create('segment', [
+                                    [midX - 0.1 - perpX, midY - 0.1 - perpY],
+                                    [midX - 0.1 + perpX, midY - 0.1 + perpY]
+                                ], {
+                                    strokeColor: cmd.color,
+                                    strokeWidth: 3
+                                });
+
+                                board.create('segment', [
+                                    [midX + 0.1 - perpX, midY + 0.1 - perpY],
+                                    [midX + 0.1 + perpX, midY + 0.1 + perpY]
+                                ], {
+                                    strokeColor: cmd.color,
+                                    strokeWidth: 3
+                                });
+                            } else if (cmd.componentType === 'switch') {
+                                // スイッチシンボル（ギャップ付き線）
+                                const gapSize = 0.15;
+                                const dirX = (cmd.end[0] - cmd.start[0]);
+                                const dirY = (cmd.end[1] - cmd.start[1]);
+                                const length = Math.sqrt(dirX * dirX + dirY * dirY);
+                                const unitX = dirX / length;
+                                const unitY = dirY / length;
+
+                                board.create('segment', [
+                                    [midX - gapSize * unitX, midY - gapSize * unitY],
+                                    [midX + gapSize * unitX * 1.5, midY + gapSize * unitY * 1.5 + 0.2]
+                                ], {
+                                    strokeColor: cmd.color,
+                                    strokeWidth: 3
+                                });
+                            }
+
+                            // ラベルを追加
+                            if (cmd.label) {
+                                board.create('text', [midX, midY - 0.3, cmd.label], {
+                                    fontSize: 12,
+                                    color: cmd.color
+                                });
+                            }
+                        } else if (cmd.type === 'coordinate') {
+                            // 座標点（非表示、参照用）
+                            board.create('point', cmd.position, {
+                                visible: false,
+                                name: cmd.name
+                            });
+                        } else if (cmd.type === 'text') {
+                            // テキストラベル
+                            board.create('text', [cmd.position[0], cmd.position[1], cmd.text], {
+                                fontSize: 14,
+                                color: cmd.color,
+                                anchorX: 'middle',
+                                anchorY: 'middle'
+                            });
+                        } else if (cmd.type === 'arrow') {
                             board.create('arrow', [cmd.start, cmd.end], {
                                 strokeColor: cmd.color,
                                 strokeWidth: cmd.thick ? 3 : 2
@@ -900,12 +1091,22 @@
                 try {
                     this.log('物理図レンダリング開始');
                     const commands = this.parsePhysicsTikZCode(tikzInput);
-                    this.log(`解析結果: ${commands.length} 物理コマンド`);
+
+                    // 回路コンポーネントの詳細ログ
+                    const circuitComponents = commands.filter(cmd => cmd.type === 'circuit_component');
+                    if (circuitComponents.length > 0) {
+                        this.log(`回路コンポーネント解析: ${circuitComponents.length}個`, 'success');
+                        circuitComponents.forEach(comp => {
+                            this.log(`- ${comp.componentType}: ${comp.label || '無名'} (${comp.start} → ${comp.end})`);
+                        });
+                    }
+
+                    this.log(`解析結果: ${commands.length} 物理コマンド (内${circuitComponents.length}個が回路)`);
 
                     if (commands.length > 0) {
                         this.renderWithJSXGraph(commands);
                     } else {
-                        this.preview.innerHTML = '<p style="color: #f59e0b; margin-top: 150px;">解析できる物理コマンドがありません</p>';
+                        this.preview.innerHTML = '<p style="color: #f59e0b; margin-top: 150px;">解析できる物理コマンドがありません<br><small>circuitikz構文、coordinate、node、drawコマンドに対応</small></p>';
                     }
 
                 } catch (error) {
