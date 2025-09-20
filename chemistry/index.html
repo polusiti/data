@@ -702,7 +702,7 @@
                     <button class="latex-btn" data-latex="\ce{A + B -> C + D}" title="化学反応式">$\ce{A + B -> C + D}$</button>
                     <button class="latex-btn" data-latex="\ce{<->}" title="可逆反応">$\ce{<->}$</button>
                     <button class="latex-btn" data-latex="\ce{<=>>}" title="平衡">$\ce{<=>>}$</button>
-                    <button class="latex-btn" data-latex="\ce{->>" title="不可逆反応">$\ce{->>}$</button>
+                    <button class="latex-btn" data-latex="\ce{->>}" title="不可逆反応">$\ce{->>}$</button>
                     <button class="latex-btn" data-latex="\ce{->[heat]}" title="条件付き反応">$\ce{->[heat]}$</button>
 
                     <!-- イオン・電荷 -->
@@ -970,12 +970,16 @@ K = \frac{[\ce{H+}][\ce{OH-}]}{[\ce{H2O}]}
             // KaTeX読み込み待機
             waitForKaTeX() {
                 const checkKaTeX = () => {
-                    if (window.katex && window.katex.__mhchem) {
-                        this.addStatus('✅ KaTeX+mhchem レンダリングエンジン準備完了', 'success');
-                        this.renderInitialMath();
-                    } else if (window.katex) {
-                        // mhchemが読み込まれていない場合は少し待つ
-                        setTimeout(checkKaTeX, 100);
+                    if (window.katex) {
+                        // mhchemのテストレンダリングで確認
+                        try {
+                            window.katex.renderToString('\\ce{H2O}', { throwOnError: true, trust: true });
+                            this.addStatus('✅ KaTeX+mhchem レンダリングエンジン準備完了', 'success');
+                            this.renderInitialMath();
+                        } catch (error) {
+                            // mhchemがまだ読み込まれていない
+                            setTimeout(checkKaTeX, 100);
+                        }
                     } else {
                         setTimeout(checkKaTeX, 100);
                     }
@@ -1202,14 +1206,23 @@ K = \frac{[\ce{H+}][\ce{OH-}]}{[\ce{H2O}]}
                         throwOnError: false,
                         displayMode: isDisplayMode,
                         strict: false,
-                        trust: true // mhchemで必要
+                        trust: true, // mhchemで必要
+                        macros: {
+                            // mhchemの追加サポート
+                            "\\ce": "\\ce"
+                        }
                     });
 
                     this.preview.innerHTML = rendered;
                     this.addStatus('✅ レンダリング完了', 'success');
                 } catch (error) {
-                    this.preview.innerHTML = `<div style="color: #ef4444;">レンダリングエラー: ${error.message}</div>`;
-                    this.addStatus(`❌ レンダリングエラー: ${error.message}`, 'error');
+                    // mhchemエラーの場合、より詳細な情報を表示
+                    let errorMessage = error.message;
+                    if (errorMessage.includes('mhchem') || errorMessage.includes('\\ce')) {
+                        errorMessage += ' (mhchem拡張の読み込みを確認してください)';
+                    }
+                    this.preview.innerHTML = `<div style="color: #ef4444;">レンダリングエラー: ${errorMessage}</div>`;
+                    this.addStatus(`❌ レンダリングエラー: ${errorMessage}`, 'error');
                 }
             }
 
@@ -1227,11 +1240,15 @@ K = \frac{[\ce{H+}][\ce{OH-}]}{[\ce{H2O}]}
                             const rendered = window.katex.renderToString(mathExpr, {
                                 throwOnError: false,
                                 displayMode: false,
-                                trust: true
+                                trust: true,
+                                macros: {
+                                    "\\ce": "\\ce"
+                                }
                             });
                             btn.innerHTML = rendered;
                         } catch (error) {
                             // エラーの場合は元のテキストのまま
+                            console.warn('ボタンレンダリングエラー:', error.message, 'for:', mathExpr);
                         }
                     }
                 });
