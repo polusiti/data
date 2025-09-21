@@ -137,6 +137,7 @@
             background: linear-gradient(transparent, white);
         }
 
+
         /* Comment System Styles */
         .problem-modal .modal-dialog {
             max-width: 900px;
@@ -419,30 +420,58 @@
                 <div class="col-md-4">
                     <label for="tagSearch" class="form-label">タグ検索</label>
                     <input type="text" class="form-control" id="tagSearch" placeholder="タグで検索..." oninput="applyFilters()">
+                    <div class="form-text">例: 微分積分, 大学</div>
                 </div>
                 <div class="col-md-4">
-                    <label for="authorSearch" class="form-label">作成者検索</label>
-                    <input type="text" class="form-control" id="authorSearch" placeholder="作成者名..." oninput="applyFilters()">
-                </div>
-                <div class="col-md-4">
-                    <label for="timeFilter" class="form-label">推定解答時間</label>
-                    <select class="form-select" id="timeFilter" onchange="applyFilters()">
+                    <label for="yearFilter" class="form-label">年代</label>
+                    <select class="form-select" id="yearFilter" onchange="applyFilters()">
                         <option value="">全て</option>
-                        <option value="5">5分以内</option>
-                        <option value="10">10分以内</option>
-                        <option value="20">20分以内</option>
-                        <option value="30">30分以内</option>
-                        <option value="60">1時間以内</option>
+                        <option value="2020-2024">2020年代</option>
+                        <option value="2010-2019">2010年代</option>
+                        <option value="2000-2009">2000年代</option>
+                        <option value="1990-1999">1990年代</option>
+                        <option value="1980-1989">1980年代</option>
+                        <option value="1970-1979">1970年代</option>
+                        <option value="1960-1969">1960年代</option>
+                        <option value="1950-1959">1950年代</option>
+                        <option value="1940-1949">1940年代</option>
+                        <option value="1930-1939">1930年代</option>
+                        <option value="1920-1929">1920年代</option>
                     </select>
+                </div>
+                <div class="col-md-4">
+                    <!-- Placeholder for future filters -->
                 </div>
             </div>
 
-            <div class="row mt-2">
+            <!-- Search History Section -->
+            <div class="row mt-3" id="searchHistorySection" style="display: none;">
                 <div class="col-12">
-                    <button class="btn btn-outline-secondary btn-sm" onclick="clearAllFilters()">
-                        <i class="fas fa-times"></i> フィルターをクリア
+                    <label class="form-label">検索履歴</label>
+                    <div class="d-flex flex-wrap gap-2" id="searchHistoryContainer">
+                        <!-- Search history buttons will be populated here -->
+                    </div>
+                    <button class="btn btn-outline-secondary btn-sm mt-2" onclick="clearSearchHistory()">
+                        <i class="fas fa-trash"></i> 履歴をクリア
                     </button>
-                    <button class="btn btn-outline-primary btn-sm ms-2" onclick="saveSearch()">
+                </div>
+            </div>
+
+            <div class="row mt-3">
+                <div class="col-12 d-flex flex-wrap gap-2">
+                    <button class="btn btn-primary" onclick="executeSearch()">
+                        <i class="fas fa-search"></i> 検索実行
+                    </button>
+                    <button class="btn btn-success" onclick="executeFilter()">
+                        <i class="fas fa-filter"></i> フィルタ実行
+                    </button>
+                    <button class="btn btn-outline-secondary" onclick="clearAllFilters()">
+                        <i class="fas fa-times"></i> 全てのフィルターをクリア
+                    </button>
+                    <button class="btn btn-outline-info" onclick="toggleSearchHistory()">
+                        <i class="fas fa-history"></i> 検索履歴
+                    </button>
+                    <button class="btn btn-outline-primary" onclick="saveSearch()">
                         <i class="fas fa-bookmark"></i> 検索条件を保存
                     </button>
                 </div>
@@ -658,7 +687,7 @@
                         category: '高校数学',
                         difficulty: 4,
                         author: 'Kobutya',
-                        content: '(1) 自然数 $n$ について、$\\cos\\theta = x$ とおくと $\\cos n\\theta$ が $x$ の多項式で表せ、またその係数はすべて整数となることを示せ。',
+                        content: '(1) 自然数 $n$ について、$\cos\theta = x$ とおくと $\cos n\theta$ が $x$ の多項式で表せ、またその係数はすべて整数となることを示せ。',
                         answerType: 'manual',
                         likes: 0,
                         answers: 0,
@@ -781,26 +810,33 @@
             const sort = document.getElementById('sortFilter').value;
             const search = document.getElementById('searchInput').value.toLowerCase();
             const tagSearch = document.getElementById('tagSearch')?.value.toLowerCase() || '';
-            const authorSearch = document.getElementById('authorSearch')?.value.toLowerCase() || '';
-            const timeFilter = document.getElementById('timeFilter')?.value || '';
+            const yearFilter = document.getElementById('yearFilter')?.value || '';
 
             // Filter problems
             let filteredProblems = sampleProblems.filter(problem => {
                 if (problem.subject !== currentSubject) return false;
                 if (category && problem.category !== category) return false;
                 if (difficulty && problem.difficulty !== parseInt(difficulty)) return false;
-                if (timeFilter && problem.estimatedTime > parseInt(timeFilter)) return false;
+
+                // Year filtering
+                if (yearFilter) {
+                    const [startYear, endYear] = yearFilter.split('-').map(y => parseInt(y));
+                    const problemYear = problem.year || new Date(problem.createdAt).getFullYear();
+                    if (problemYear < startYear || problemYear > endYear) return false;
+                }
 
                 // Text search in title and content
                 if (search && !problem.title.toLowerCase().includes(search) &&
                     !(problem.content || '').toLowerCase().includes(search)) return false;
 
-                // Tag search
-                if (tagSearch && !(problem.tags || []).some(tag =>
-                    tag.toLowerCase().includes(tagSearch))) return false;
-
-                // Author search
-                if (authorSearch && !(problem.author || '').toLowerCase().includes(authorSearch)) return false;
+                // Tag search with partial matching (includes university names)
+                if (tagSearch) {
+                    const allTags = [
+                        ...(problem.tags || []),
+                        ...(problem.universities || [])
+                    ];
+                    if (!allTags.some(tag => tag.toLowerCase().includes(tagSearch))) return false;
+                }
 
                 return true;
             });
@@ -817,9 +853,9 @@
                     case 'likes':
                         return b.likes - a.likes;
                     case 'relevance':
-                        if (!search && !tagSearch && !authorSearch) return 0;
-                        return calculateRelevanceScore(b, search, tagSearch, authorSearch) -
-                               calculateRelevanceScore(a, search, tagSearch, authorSearch);
+                        if (!search && !tagSearch) return 0;
+                        return calculateRelevanceScore(b, search, tagSearch) -
+                               calculateRelevanceScore(a, search, tagSearch);
                     default:
                         return 0;
                 }
@@ -832,12 +868,11 @@
             renderPagination();
         }
 
-        function calculateRelevanceScore(problem, search, tagSearch, authorSearch) {
+        function calculateRelevanceScore(problem, search, tagSearch) {
             let score = 0;
             const title = (problem.title || '').toLowerCase();
             const content = (problem.content || '').toLowerCase();
             const tags = (problem.tags || []).join(' ').toLowerCase();
-            const author = (problem.author || '').toLowerCase();
 
             // Title matches get highest score
             if (search && title.includes(search)) score += 10;
@@ -845,9 +880,6 @@
 
             // Tag matches
             if (tagSearch && tags.includes(tagSearch)) score += 8;
-
-            // Author matches
-            if (authorSearch && author.includes(authorSearch)) score += 6;
 
             return score;
         }
@@ -864,9 +896,300 @@
             document.getElementById('sortFilter').value = 'newest';
             document.getElementById('searchInput').value = '';
             if (document.getElementById('tagSearch')) document.getElementById('tagSearch').value = '';
-            if (document.getElementById('authorSearch')) document.getElementById('authorSearch').value = '';
-            if (document.getElementById('timeFilter')) document.getElementById('timeFilter').value = '';
+            if (document.getElementById('yearFilter')) document.getElementById('yearFilter').value = '';
+
+
             applyFilters();
+            showNotification('全てのフィルターをクリアしました', 'success');
+        }
+
+        // Search History Management
+        let searchHistory = JSON.parse(localStorage.getItem('searchHistory') || '[]');
+
+        function toggleSearchHistory() {
+            const historySection = document.getElementById('searchHistorySection');
+            const isVisible = historySection.style.display !== 'none';
+
+            if (!isVisible) {
+                loadSearchHistory();
+                historySection.style.display = 'block';
+            } else {
+                historySection.style.display = 'none';
+            }
+        }
+
+        function loadSearchHistory() {
+            const container = document.getElementById('searchHistoryContainer');
+
+            if (searchHistory.length === 0) {
+                container.innerHTML = '<small class="text-muted">検索履歴がありません</small>';
+                return;
+            }
+
+            container.innerHTML = searchHistory.slice(0, 10).map((search, index) => `
+                <button class="btn btn-outline-secondary btn-sm" onclick="applySearchFromHistory(${index})">
+                    <i class="fas fa-clock me-1"></i>
+                    ${search.keyword || '無題'}
+                    ${search.category ? `(${search.category})` : ''}
+                    ${search.year ? `[${search.year}]` : ''}
+                </button>
+            `).join('');
+        }
+
+        function saveToSearchHistory() {
+            const search = {
+                keyword: document.getElementById('searchInput').value.trim(),
+                subject: currentSubject,
+                category: document.getElementById('categoryFilter').value,
+                difficulty: document.getElementById('difficultyFilter').value,
+                sort: document.getElementById('sortFilter').value,
+                tags: document.getElementById('tagSearch')?.value?.trim() || '',
+                author: document.getElementById('authorSearch')?.value?.trim() || '',
+                timeFilter: document.getElementById('timeFilter')?.value || '',
+                year: document.getElementById('yearFilter')?.value || '',
+                timestamp: new Date().toISOString()
+            };
+
+            // Skip empty searches
+            if (!search.keyword && !search.category && !search.tags && !search.author && !search.year) {
+                return;
+            }
+
+            // Remove duplicates
+            searchHistory = searchHistory.filter(h =>
+                !(h.keyword === search.keyword && h.category === search.category &&
+                  h.tags === search.tags && h.year === search.year)
+            );
+
+            // Add to beginning
+            searchHistory.unshift(search);
+
+            // Keep only last 20 searches
+            if (searchHistory.length > 20) {
+                searchHistory = searchHistory.slice(0, 20);
+            }
+
+            localStorage.setItem('searchHistory', JSON.stringify(searchHistory));
+        }
+
+        function applySearchFromHistory(index) {
+            const search = searchHistory[index];
+            if (!search) return;
+
+            // Switch subject if different
+            if (search.subject !== currentSubject) {
+                switchSubject(search.subject);
+            }
+
+            // Apply search conditions
+            document.getElementById('searchInput').value = search.keyword || '';
+            document.getElementById('categoryFilter').value = search.category || '';
+            document.getElementById('difficultyFilter').value = search.difficulty || '';
+            document.getElementById('sortFilter').value = search.sort || 'newest';
+
+            if (document.getElementById('tagSearch')) {
+                document.getElementById('tagSearch').value = search.tags || '';
+            }
+            if (document.getElementById('authorSearch')) {
+                document.getElementById('authorSearch').value = search.author || '';
+            }
+            if (document.getElementById('timeFilter')) {
+                document.getElementById('timeFilter').value = search.timeFilter || '';
+            }
+            if (document.getElementById('yearFilter')) {
+                document.getElementById('yearFilter').value = search.year || '';
+            }
+
+            // Apply filters and hide history
+            applyFilters();
+            document.getElementById('searchHistorySection').style.display = 'none';
+            showNotification('検索履歴を適用しました', 'success');
+        }
+
+        function clearSearchHistory() {
+            if (confirm('検索履歴を削除してもよろしいですか？')) {
+                searchHistory = [];
+                localStorage.removeItem('searchHistory');
+                loadSearchHistory();
+                showNotification('検索履歴をクリアしました', 'success');
+            }
+        }
+
+        // Search & Filter Execution Functions with API Integration
+
+        async function executeSearch() {
+            showNotification('検索を実行中...', 'info');
+            showLoadingSpinner();
+
+            // Save to search history
+            saveToSearchHistory();
+
+            try {
+                // Use Worker client directly instead of API endpoint
+                await performWorkerSearch();
+            } catch (error) {
+                console.error('Search execution error:', error);
+                showNotification('検索実行中にエラーが発生しました: ' + error.message, 'error');
+            } finally {
+                hideLoadingSpinner();
+            }
+        }
+
+        async function executeFilter() {
+            showNotification('フィルタを実行中...', 'info');
+            showLoadingSpinner();
+
+            // Save to search history
+            saveToSearchHistory();
+
+            try {
+                // Use Worker client directly instead of API endpoint
+                await performWorkerSearch();
+            } catch (error) {
+                console.error('Filter execution error:', error);
+                showNotification('フィルタ実行中にエラーが発生しました: ' + error.message, 'error');
+            } finally {
+                hideLoadingSpinner();
+            }
+        }
+
+        async function performWorkerSearch() {
+            console.log('Starting Worker-based search...');
+
+            try {
+                await tryWorkerSearch();
+            } catch (workerError) {
+                console.warn('Worker search failed, falling back to local search:', workerError);
+                performLocalFallbackSearch();
+            }
+        }
+
+        async function tryWorkerSearch() {
+            console.log('Using Cloudflare Worker search endpoint');
+
+            const filters = {
+                subject: currentSubject,
+                search: document.getElementById('searchInput').value.trim(),
+                difficulty_level: document.getElementById('difficultyFilter').value || '',
+                tags: document.getElementById('tagSearch')?.value?.trim() || '',
+                yearFilter: document.getElementById('yearFilter')?.value || '',
+                limit: itemsPerPage,
+                offset: (currentPage - 1) * itemsPerPage
+            };
+
+            console.log('Search filters:', filters);
+
+            // Build query parameters
+            const params = new URLSearchParams();
+            Object.entries(filters).forEach(([key, value]) => {
+                if (value !== '' && value !== null && value !== undefined) {
+                    params.append(key, value.toString());
+                }
+            });
+
+            const searchUrl = `https://data-manager-auth.t88596565.workers.dev/api/search/questions?${params.toString()}`;
+            console.log('Search URL:', searchUrl);
+
+            const response = await fetch(searchUrl, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`Worker search failed: ${response.status} ${response.statusText}`);
+            }
+
+            const result = await response.json();
+            console.log('Worker search result:', result);
+
+            if (result.success) {
+                currentProblems = result.data || [];
+                currentPage = 1;
+                renderProblems();
+                updateResultsCount();
+                renderPagination();
+                showNotification(`${result.count || currentProblems.length}件の問題が見つかりました (Cloudflare Worker経由)`, 'success');
+            } else {
+                throw new Error(result.error || 'Worker search failed');
+            }
+        }
+
+        function performLocalFallbackSearch() {
+            console.log('Performing local fallback search...');
+
+            const category = document.getElementById('categoryFilter').value;
+            const difficulty = document.getElementById('difficultyFilter').value;
+            const sort = document.getElementById('sortFilter').value;
+            const search = document.getElementById('searchInput').value.toLowerCase();
+            const tagSearch = document.getElementById('tagSearch')?.value.toLowerCase() || '';
+            const yearFilter = document.getElementById('yearFilter')?.value || '';
+
+            // Filter sample problems locally
+            let filteredProblems = sampleProblems.filter(problem => {
+                if (problem.subject !== currentSubject) return false;
+                if (category && problem.category !== category) return false;
+                if (difficulty && problem.difficulty !== parseInt(difficulty)) return false;
+
+                // Year filtering
+                if (yearFilter) {
+                    const [startYear, endYear] = yearFilter.split('-').map(y => parseInt(y));
+                    const problemYear = problem.year || new Date(problem.createdAt).getFullYear();
+                    if (problemYear < startYear || problemYear > endYear) return false;
+                }
+
+                // Text search in title and content
+                if (search && !problem.title.toLowerCase().includes(search) &&
+                    !(problem.content || '').toLowerCase().includes(search)) return false;
+
+                // Tag search with partial matching (includes university names)
+                if (tagSearch) {
+                    const allTags = [
+                        ...(problem.tags || []),
+                        ...(problem.universities || [])
+                    ];
+                    if (!allTags.some(tag => tag.toLowerCase().includes(tagSearch))) return false;
+                }
+
+                return true;
+            });
+
+            // Sort problems
+            filteredProblems.sort((a, b) => {
+                switch (sort) {
+                    case 'newest':
+                        return new Date(b.createdAt) - new Date(a.createdAt);
+                    case 'oldest':
+                        return new Date(a.createdAt) - new Date(b.createdAt);
+                    case 'difficulty':
+                        return b.difficulty - a.difficulty;
+                    case 'likes':
+                        return b.likes - a.likes;
+                    case 'relevance':
+                        if (!search && !tagSearch) return 0;
+                        return calculateRelevanceScore(b, search, tagSearch) -
+                               calculateRelevanceScore(a, search, tagSearch);
+                    default:
+                        return 0;
+                }
+            });
+
+            currentProblems = filteredProblems;
+            currentPage = 1;
+            renderProblems();
+            updateResultsCount();
+            renderPagination();
+
+            showNotification(`${filteredProblems.length}件の問題が見つかりました (ローカルフォールバック)`, 'info');
+        }
+
+        function showLoadingSpinner() {
+            document.getElementById('loadingSpinner').style.display = 'block';
+        }
+
+        function hideLoadingSpinner() {
+            document.getElementById('loadingSpinner').style.display = 'none';
         }
 
         function saveSearch() {
@@ -877,8 +1200,6 @@
                 sort: document.getElementById('sortFilter').value,
                 search: document.getElementById('searchInput').value,
                 tagSearch: document.getElementById('tagSearch')?.value || '',
-                authorSearch: document.getElementById('authorSearch')?.value || '',
-                timeFilter: document.getElementById('timeFilter')?.value || '',
                 timestamp: new Date().toISOString()
             };
 
@@ -943,7 +1264,7 @@
                             
                             <div class="problem-meta mb-2">
                                 <small>
-                                    <i class="fas fa-user"></i> ${problem.author} | 
+                                    <i class="fas fa-user"></i> ${problem.author} |
                                     <i class="fas fa-tag"></i> ${problem.category} |
                                     <span class="difficulty-stars">${difficultyStars}</span>
                                 </small>
@@ -959,7 +1280,6 @@
                             
                             <div class="d-flex justify-content-between align-items-center">
                                 <small class="text-muted">
-                                    <i class="fas fa-clock"></i> ${problem.estimatedTime}分 |
                                     <i class="fas fa-comments"></i> ${problem.answers || 0}件
                                 </small>
                                 <div>
@@ -991,10 +1311,9 @@
                                 <h5 class="card-title">${problem.title}</h5>
                                 <div class="problem-meta mb-2">
                                     <small>
-                                        <i class="fas fa-user"></i> ${problem.author} | 
+                                        <i class="fas fa-user"></i> ${problem.author} |
                                         <i class="fas fa-tag"></i> ${problem.category} |
-                                        <span class="difficulty-stars">${difficultyStars}</span> |
-                                        <i class="fas fa-clock"></i> ${problem.estimatedTime}分
+                                        <span class="difficulty-stars">${difficultyStars}</span>
                                     </small>
                                 </div>
                                 <p class="card-text">${problem.content.substring(0, 200)}...</p>
@@ -1123,7 +1442,6 @@
                 <span><i class="fas fa-user"></i> ${problem.author || 'Anonymous'}</span>
                 <span><i class="fas fa-tag"></i> ${problem.category || '未分類'}</span>
                 <span><i class="fas fa-star"></i> ${generateStars(problem.difficulty)}</span>
-                <span><i class="fas fa-clock"></i> ${problem.estimatedTime || 0}分</span>
                 <span><i class="fas fa-calendar"></i> ${problem.createdAt ? new Date(problem.createdAt).toLocaleDateString() : '不明'}</span>
             `;
             document.getElementById('modalProblemMeta').innerHTML = metaHtml;
@@ -1675,229 +1993,6 @@
         }
 
         function replyToComment(commentId) {
-            // Hide all other reply forms
-            document.querySelectorAll('.reply-form').forEach(form => {
-                form.style.display = 'none';
-            });
-
-            // Show this reply form
-            const replyForm = document.getElementById(`reply-form-${commentId}`);
-            if (replyForm) {
-                replyForm.style.display = 'block';
-                replyForm.querySelector('textarea').focus();
-            }
-        }
-
-        function cancelReply(commentId) {
-            const replyForm = document.getElementById(`reply-form-${commentId}`);
-            if (replyForm) {
-                replyForm.style.display = 'none';
-                replyForm.querySelector('textarea').value = '';
-            }
-        }
-
-        async function submitReply(parentCommentId) {
-            if (!window.authClient || !window.authClient.isLoggedIn()) {
-                alert('返信するにはログインが必要です');
-                return;
-            }
-
-            const replyForm = document.getElementById(`reply-form-${parentCommentId}`);
-            const textarea = replyForm.querySelector('textarea');
-            const content = textarea.value.trim();
-
-            if (!content) {
-                alert('返信内容を入力してください');
-                return;
-            }
-
-            const user = window.authClient.getCurrentUser();
-
-            const replyComment = {
-                problemId: currentProblem.id,
-                userId: user.id,
-                authorName: user.displayName,
-                authorInquiryNumber: user.inquiryNumber,
-                content: content,
-                parentId: parentCommentId
-            };
-
-            try {
-                const result = await window.questaD1.saveComment(replyComment);
-
-                if (result.success) {
-                    textarea.value = '';
-                    replyForm.style.display = 'none';
-                    await loadComments(currentProblem.id);
-                    showNotification('返信を投稿しました！', 'success');
-                } else {
-                    throw new Error(result.error);
-                }
-            } catch (error) {
-                console.error('Reply submit error:', error);
-                showNotification('返信の投稿に失敗しました', 'error');
-            }
-        }
-
-        // Helper functions
-        function canDeleteComment(comment) {
-            if (!window.authClient || !window.authClient.isLoggedIn()) {
-                console.log('Cannot delete: user not logged in');
-                return false;
-            }
-
-            const user = window.authClient.getCurrentUser();
-            console.log('Checking delete permission:', {
-                commentId: comment.id,
-                currentUserId: user.id,
-                currentUserDisplayName: user.displayName,
-                commentUserId: comment.user_id,
-                commentAuthorId: comment.authorId,
-                commentAuthor: comment.author,
-                commentAuthorName: comment.author_name
-            });
-
-            // Check multiple possible matches for ownership
-            const canDelete = comment.user_id === user.id ||
-                            comment.authorId === user.id ||
-                            comment.author === user.displayName ||
-                            comment.author_name === user.displayName;
-
-            console.log('Can delete:', canDelete);
-            return canDelete;
-        }
-
-        function escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
-
-        // Media preview functions
-        function previewCommentMedia() {
-            const fileInput = document.getElementById('commentMedia');
-            const previewArea = document.getElementById('commentMediaPreview');
-            const previewContainer = document.getElementById('mediaPreviewContainer');
-
-            if (!fileInput.files || fileInput.files.length === 0) {
-                previewArea.style.display = 'none';
-                return;
-            }
-
-            // Validate files
-            const maxSize = 50 * 1024 * 1024; // 50MB
-            const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'audio/mpeg', 'audio/wav', 'audio/ogg', 'audio/mp4'];
-
-            for (const file of fileInput.files) {
-                if (file.size > maxSize) {
-                    alert(`ファイル「${file.name}」のサイズが大きすぎます（最大50MB）`);
-                    fileInput.value = '';
-                    previewArea.style.display = 'none';
-                    return;
-                }
-
-                if (!allowedTypes.includes(file.type)) {
-                    alert(`ファイル「${file.name}」は対応していない形式です`);
-                    fileInput.value = '';
-                    previewArea.style.display = 'none';
-                    return;
-                }
-            }
-
-            // Create previews
-            previewContainer.innerHTML = '';
-            Array.from(fileInput.files).forEach((file, index) => {
-                const previewDiv = document.createElement('div');
-                previewDiv.className = 'position-relative';
-
-                if (file.type.startsWith('image/')) {
-                    const img = document.createElement('img');
-                    img.src = URL.createObjectURL(file);
-                    img.className = 'img-thumbnail';
-                    img.style.cssText = 'width: 100px; height: 100px; object-fit: cover;';
-                    img.onload = () => URL.revokeObjectURL(img.src);
-                    previewDiv.appendChild(img);
-                } else if (file.type.startsWith('audio/')) {
-                    const audioDiv = document.createElement('div');
-                    audioDiv.className = 'bg-light border rounded d-flex align-items-center justify-content-center';
-                    audioDiv.style.cssText = 'width: 100px; height: 100px;';
-                    audioDiv.innerHTML = `
-                        <div class="text-center">
-                            <i class="fas fa-music fa-2x text-primary"></i>
-                            <div class="small mt-1">${file.name.split('.').pop().toUpperCase()}</div>
-                        </div>
-                    `;
-                    previewDiv.appendChild(audioDiv);
-                }
-
-                // Add file name and remove button
-                const infoDiv = document.createElement('div');
-                infoDiv.className = 'small text-truncate mt-1';
-                infoDiv.style.maxWidth = '100px';
-                infoDiv.textContent = file.name;
-
-                const removeBtn = document.createElement('button');
-                removeBtn.className = 'btn btn-danger btn-sm position-absolute top-0 end-0';
-                removeBtn.style.cssText = 'padding: 2px 6px; font-size: 0.7rem;';
-                removeBtn.innerHTML = '<i class="fas fa-times"></i>';
-                removeBtn.onclick = () => removeMediaFile(index);
-
-                previewDiv.appendChild(removeBtn);
-                previewDiv.appendChild(infoDiv);
-                previewContainer.appendChild(previewDiv);
-            });
-
-            previewArea.style.display = 'block';
-        }
-
-        function removeMediaFile(indexToRemove) {
-            const fileInput = document.getElementById('commentMedia');
-            const dt = new DataTransfer();
-
-            Array.from(fileInput.files).forEach((file, index) => {
-                if (index !== indexToRemove) {
-                    dt.items.add(file);
-                }
-            });
-
-            fileInput.files = dt.files;
-            previewCommentMedia();
-        }
-
-        function clearCommentMedia() {
-            const fileInput = document.getElementById('commentMedia');
-            const previewArea = document.getElementById('commentMediaPreview');
-
-            fileInput.value = '';
-            previewArea.style.display = 'none';
-        }
-
-        // Toggle problem like function
-        function toggleProblemLike() {
-            if (!currentProblem) return;
-
-            const likeBtn = document.getElementById('modalLikeBtn');
-            const likeCount = document.getElementById('modalLikeCount');
-
-            // Toggle like status
-            currentProblem.liked = !currentProblem.liked;
-
-            if (currentProblem.liked) {
-                currentProblem.likes = (currentProblem.likes || 0) + 1;
-                likeBtn.classList.add('liked');
-                showNotification('いいねしました！', 'success');
-            } else {
-                currentProblem.likes = Math.max(0, (currentProblem.likes || 0) - 1);
-                likeBtn.classList.remove('liked');
-            }
-
-            likeCount.textContent = currentProblem.likes;
-
-            // Update the problem in the list view as well
-            renderProblems();
-        }
-
-        function replyToComment(commentId) {
             // For simplicity, we'll focus the main comment form
             // In a full implementation, you might add inline reply forms
             document.getElementById('commentContent').focus();
@@ -2045,13 +2140,8 @@
 
         // Initialize
         document.addEventListener('DOMContentLoaded', function() {
-            // Initialize D1 client
-            if (typeof QuestaD1Client !== 'undefined' && !window.questaD1) {
-                console.log('✅ Initializing D1 client');
-                window.questaD1 = new QuestaD1Client();
-            } else if (typeof QuestaD1Client === 'undefined') {
-                console.warn('⚠️ QuestaD1Client not found - D1 functionality will use localStorage fallback');
-            }
+            // No need for D1 client initialization - using Worker now
+            console.log('✅ Initializing browse interface with Worker-based search');
 
             updateCategoryFilter();
             applyFilters();
