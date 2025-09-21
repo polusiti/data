@@ -60,7 +60,7 @@ class PhysicsTikZCreator {
     async loadTemplatesFromDB() {
         this.log('データベースからテンプレートを読み込み中...');
         try {
-            const response = await fetch('/api/templates/tikz');
+            const response = await fetch(`${this.workerBaseUrl}/api/templates/tikz`);
             if (!response.ok) {
                 throw new Error(`API Error: ${response.status}`);
             }
