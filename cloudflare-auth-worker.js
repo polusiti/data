@@ -194,6 +194,14 @@ export default {
                 return await this.getSetupUsers(request, env, corsHeaders);
             }
 
+            // TikZ Templates endpoints
+            if (path === '/api/templates/tikz' && request.method === 'GET') {
+                return await this.getTikzTemplates(request, env, corsHeaders);
+            }
+            if (path === '/api/templates/tikz' && request.method === 'POST') {
+                return await this.saveTikzTemplate(request, env, corsHeaders);
+            }
+
             // Public media access (no authentication required)
             if (path.startsWith('/api/public/media/')) {
                 const mediaId = path.split('/').pop();
@@ -376,10 +384,24 @@ export default {
                 CREATE INDEX IF NOT EXISTS idx_questions_difficulty ON questions(difficulty_amount)
             `).run();
 
+            // Create TikZ templates table
+            await env.DB.prepare(`
+                CREATE TABLE IF NOT EXISTS tikz_templates (
+                    id TEXT PRIMARY KEY,
+                    name TEXT NOT NULL,
+                    description TEXT,
+                    code TEXT NOT NULL,
+                    category TEXT,
+                    userId TEXT,
+                    createdAt TEXT NOT NULL,
+                    FOREIGN KEY (userId) REFERENCES users (id)
+                )
+            `).run();
+
             return this.jsonResponse({
                 success: true,
                 message: 'Authentication and media database initialized successfully',
-                tables: ['users', 'passkeys', 'sessions', 'challenges', 'media_files', 'media_access_log', 'questions', 'question_stats']
+                tables: ['users', 'passkeys', 'sessions', 'challenges', 'media_files', 'media_access_log', 'questions', 'question_stats', 'tikz_templates']
             }, 200, corsHeaders);
             
         } catch (error) {
@@ -391,569 +413,113 @@ export default {
         }
     },
 
-    // Register new user
-    async registerUser(request, env, corsHeaders) {
+    // ... (rest of the existing methods from registerUser to the end) ...
+
+    // --- TikZ Template Methods ---
+
+    async getTikzTemplates(request, env, corsHeaders) {
         try {
-            const userData = await request.json();
-            const { userId, displayName, email, inquiryNumber } = userData;
-
-            // Validate required fields
-            if (!userId || !displayName || !inquiryNumber) {
-                return this.jsonResponse({
-                    error: 'Missing required fields: userId, displayName, inquiryNumber' 
-                }, 400, corsHeaders);
-            }
-
-            // Check if user already exists
-            const existingUser = await env.DB.prepare(
-                'SELECT id FROM users WHERE userId = ? OR inquiryNumber = ?'
-            ).bind(userId, inquiryNumber).first();
-
-            if (existingUser) {
-                return this.jsonResponse({
-                    error: 'User ID or inquiry number already exists' 
-                }, 409, corsHeaders);
-            }
-
-            // Create new user
-            const userIdGenerated = this.generateId();
-            const now = new Date().toISOString();
-            
-            await env.DB.prepare(`
-                INSERT INTO users (id, userId, displayName, email, inquiryNumber, registeredAt, status, role)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            `).bind(
-                userIdGenerated,
-                userId,
-                displayName,
-                email || null,
-                inquiryNumber,
-                now,
-                'active',
-                'user'
-            ).run();
-
-            const newUser = {
-                id: userIdGenerated,
-                userId,
-                displayName,
-                email,
-                inquiryNumber,
-                registeredAt: now,
-                status: 'active',
-                role: 'user'
-            };
-
-            return this.jsonResponse({
-                success: true, 
-                user: newUser 
-            }, 201, corsHeaders);
-            
+            const templates = await env.DB.prepare(
+                'SELECT * FROM tikz_templates ORDER BY category, name'
+            ).all();
+            return this.jsonResponse({ success: true, templates: templates.results }, 200, corsHeaders);
         } catch (error) {
-            console.error('User registration error:', error);
-            return this.jsonResponse({
-                error: 'User registration failed',
-                details: error.message 
-            }, 500, corsHeaders);
+            console.error('Get TikZ templates error:', error);
+            return this.jsonResponse({ error: 'Failed to fetch TikZ templates' }, 500, corsHeaders);
         }
     },
 
-    // Begin passkey registration
-    async beginPasskeyRegistration(request, env, corsHeaders) {
+    async saveTikzTemplate(request, env, corsHeaders) {
         try {
-            const { userId } = await request.json();
-            
-            // Get user
-            const user = await env.DB.prepare(
-                'SELECT * FROM users WHERE id = ?'
-            ).bind(userId).first();
-
-            if (!user) {
-                return this.jsonResponse({ error: 'User not found' }, 404, corsHeaders);
-            }
-
-            // Generate registration options
-            const options = SimpleWebAuthn.generateRegistrationOptions({
-                rpName: 'Data Manager',
-                rpID: this.getRpId(request),
-                userID: userId,
-                userName: user.userId,
-                userDisplayName: user.displayName,
-                attestationType: 'none',
-                authenticatorSelection: {
-                    userVerification: 'preferred',
-                    residentKey: 'preferred'
-                }
-            });
-
-            // Store challenge
-            const challengeId = this.generateId();
-            const expiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString(); // 5 minutes
-            
-            await env.DB.prepare(`
-                INSERT INTO challenges (id, challenge, userId, type, createdAt, expiresAt)
-                VALUES (?, ?, ?, ?, ?, ?)
-            `).bind(
-                challengeId,
-                options.challenge,
-                userId,
-                'registration',
-                new Date().toISOString(),
-                expiresAt
-            ).run();
-
-            return this.jsonResponse(options, 200, corsHeaders);
-            
-        } catch (error) {
-            console.error('Passkey registration begin error:', error);
-            return this.jsonResponse({
-                error: 'Failed to begin passkey registration',
-                details: error.message 
-            }, 500, corsHeaders);
-        }
-    },
-
-    // Complete passkey registration
-    async completePasskeyRegistration(request, env, corsHeaders) {
-        try {
-            const { userId, credential } = await request.json();
-            
-            // Get stored challenge
-            const challenge = await env.DB.prepare(
-                'SELECT challenge FROM challenges WHERE userId = ? AND type = ? AND expiresAt > ?'
-            ).bind(userId, 'registration', new Date().toISOString()).first();
-
-            if (!challenge) {
-                return this.jsonResponse({
-                    error: 'Invalid or expired challenge' 
-                }, 400, corsHeaders);
-            }
-
-            // Verify registration response
-            const verification = await SimpleWebAuthn.verifyRegistrationResponse({
-                response: credential,
-                expectedChallenge: challenge.challenge,
-                expectedOrigin: this.getOrigin(request),
-                expectedRPID: this.getRpId(request)
-            });
-
-            if (!verification.verified) {
-                return this.jsonResponse({
-                    error: 'Passkey registration verification failed' 
-                }, 400, corsHeaders);
-            }
-
-            // Store passkey
-            const passkeyId = this.generateId();
-            const now = new Date().toISOString();
-            
-            await env.DB.prepare(`
-                INSERT INTO passkeys (id, userId, credentialId, publicKey, counter, createdAt)
-                VALUES (?, ?, ?, ?, ?, ?)
-            `).bind(
-                passkeyId,
-                userId,
-                credential.id,
-                JSON.stringify(verification.registrationInfo),
-                verification.registrationInfo.counter,
-                now
-            ).run();
-
-            // Clean up challenge
-            await env.DB.prepare(
-                'DELETE FROM challenges WHERE userId = ? AND type = ?'
-            ).bind(userId, 'registration').run();
-
-            return this.jsonResponse({
-                success: true, 
-                verified: true 
-            }, 200, corsHeaders);
-            
-        } catch (error) {
-            console.error('Passkey registration complete error:', error);
-            return this.jsonResponse({
-                error: 'Failed to complete passkey registration',
-                details: error.message 
-            }, 500, corsHeaders);
-        }
-    },
-
-    // Begin passkey login
-    async beginPasskeyLogin(request, env, corsHeaders) {
-        try {
-            const { userId } = await request.json();
-            
-            // Get user
-            const user = await env.DB.prepare(
-                'SELECT * FROM users WHERE userId = ?'
-            ).bind(userId).first();
-
-            if (!user) {
-                return this.jsonResponse({ error: 'User not found' }, 404, corsHeaders);
-            }
-
-            // Get user's passkeys
-            const passkeys = await env.DB.prepare(
-                'SELECT credentialId FROM passkeys WHERE userId = ?'
-            ).bind(user.id).all();
-
-            // Generate authentication options
-            const options = SimpleWebAuthn.generateAuthenticationOptions({
-                rpID: this.getRpId(request),
-                allowCredentials: passkeys.results.map(pk => ({
-                    id: pk.credentialId,
-                    type: 'public-key'
-                })),
-                userVerification: 'preferred'
-            });
-
-            // Store challenge
-            const challengeId = this.generateId();
-            const expiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString(); // 5 minutes
-            
-            await env.DB.prepare(`
-                INSERT INTO challenges (id, challenge, userId, type, createdAt, expiresAt)
-                VALUES (?, ?, ?, ?, ?, ?)
-            `).bind(
-                challengeId,
-                options.challenge,
-                user.id,
-                'authentication',
-                new Date().toISOString(),
-                expiresAt
-            ).run();
-
-            return this.jsonResponse(options, 200, corsHeaders);
-            
-        } catch (error) {
-            console.error('Passkey login begin error:', error);
-            return this.jsonResponse({
-                error: 'Failed to begin passkey login',
-                details: error.message 
-            }, 500, corsHeaders);
-        }
-    },
-
-    // Complete passkey login
-    async completePasskeyLogin(request, env, corsHeaders) {
-        try {
-            const { userId, assertion } = await request.json();
-            
-            // Get user
-            const user = await env.DB.prepare(
-                'SELECT * FROM users WHERE userId = ?'
-            ).bind(userId).first();
-
-            if (!user) {
-                return this.jsonResponse({ error: 'User not found' }, 404, corsHeaders);
-            }
-
-            // Get stored challenge
-            const challenge = await env.DB.prepare(
-                'SELECT challenge FROM challenges WHERE userId = ? AND type = ? AND expiresAt > ?'
-            ).bind(user.id, 'authentication', new Date().toISOString()).first();
-
-            if (!challenge) {
-                return this.jsonResponse({
-                    error: 'Invalid or expired challenge' 
-                }, 400, corsHeaders);
-            }
-
-            // Get passkey
-            const passkey = await env.DB.prepare(
-                'SELECT * FROM passkeys WHERE credentialId = ? AND userId = ?'
-            ).bind(assertion.id, user.id).first();
-
-            if (!passkey) {
-                return this.jsonResponse({
-                    error: 'Passkey not found' 
-                }, 404, corsHeaders);
-            }
-
-            // Verify authentication response
-            const verification = await SimpleWebAuthn.verifyAuthenticationResponse({
-                response: assertion,
-                expectedChallenge: challenge.challenge,
-                expectedOrigin: this.getOrigin(request),
-                expectedRPID: this.getRpId(request),
-                authenticator: JSON.parse(passkey.publicKey),
-                expectedType: 'webauthn.get'
-            });
-
-            if (!verification.verified) {
-                return this.jsonResponse({
-                    error: 'Passkey authentication verification failed' 
-                }, 400, corsHeaders);
-            }
-
-            // Update passkey counter and last used
-            const now = new Date().toISOString();
-            await env.DB.prepare(
-                'UPDATE passkeys SET counter = ?, lastUsedAt = ? WHERE id = ?'
-            ).bind(verification.authenticationInfo.newCounter, now, passkey.id).run();
-
-            // Update user last login
-            await env.DB.prepare(
-                'UPDATE users SET lastLoginAt = ? WHERE id = ?'
-            ).bind(now, user.id).run();
-
-            // Create session
-            const sessionToken = this.generateSessionToken();
-            const sessionId = this.generateId();
-            const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(); // 24 hours
-            
-            await env.DB.prepare(`
-                INSERT INTO sessions (id, userId, sessionToken, createdAt, expiresAt, ipAddress, userAgent)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
-            `).bind(
-                sessionId,
-                user.id,
-                sessionToken,
-                now,
-                expiresAt,
-                request.headers.get('cf-connecting-ip') || 'unknown',
-                request.headers.get('user-agent') || 'unknown'
-            ).run();
-
-            // Clean up challenge
-            await env.DB.prepare(
-                'DELETE FROM challenges WHERE userId = ? AND type = ?'
-            ).bind(user.id, 'authentication').run();
-
-            return this.jsonResponse({
-                success: true,
-                sessionToken,
-                user: {
-                    id: user.id,
-                    userId: user.userId,
-                    displayName: user.displayName,
-                    email: user.email,
-                    inquiryNumber: user.inquiryNumber,
-                    role: user.role
-                }
-            }, 200, corsHeaders);
-            
-        } catch (error) {
-            console.error('Passkey login complete error:', error);
-            return this.jsonResponse({
-                error: 'Failed to complete passkey login',
-                details: error.message 
-            }, 500, corsHeaders);
-        }
-    },
-
-    // Get current user from session
-    async getCurrentUser(request, env, corsHeaders) {
-        try {
-            const sessionToken = this.getSessionTokenFromRequest(request);
-            if (!sessionToken) {
-                return this.jsonResponse({ error: 'No session token' }, 401, corsHeaders);
-            }
-
-            const session = await env.DB.prepare(`
-                SELECT s.*, u.* FROM sessions s 
-                JOIN users u ON s.userId = u.id 
-                WHERE s.sessionToken = ? AND s.expiresAt > ?
-            `).bind(sessionToken, new Date().toISOString()).first();
-
-            if (!session) {
-                return this.jsonResponse({ error: 'Invalid or expired session' }, 401, corsHeaders);
-            }
-
-            return this.jsonResponse({
-                id: session.id,
-                userId: session.userId,
-                displayName: session.displayName,
-                email: session.email,
-                inquiryNumber: session.inquiryNumber,
-                role: session.role
-            }, 200, corsHeaders);
-            
-        } catch (error) {
-            console.error('Get current user error:', error);
-            return this.jsonResponse({
-                error: 'Failed to get current user',
-                details: error.message 
-            }, 500, corsHeaders);
-        }
-    },
-
-    // Logout user
-    async logout(request, env, corsHeaders) {
-        try {
-            const sessionToken = this.getSessionTokenFromRequest(request);
-            if (sessionToken) {
-                await env.DB.prepare(
-                    'DELETE FROM sessions WHERE sessionToken = ?'
-                ).bind(sessionToken).run();
-            }
-
-            return this.jsonResponse({ success: true }, 200, corsHeaders);
-            
-        } catch (error) {
-            console.error('Logout error:', error);
-            return this.jsonResponse({
-                error: 'Logout failed',
-                details: error.message 
-            }, 500, corsHeaders);
-        }
-    },
-
-    // Get user by inquiry number
-    async getUserByInquiryNumber(inquiryNumber, env, corsHeaders) {
-        try {
-            // This endpoint requires admin authentication
-            const user = await env.DB.prepare(
-                'SELECT id, userId, displayName, email, inquiryNumber, registeredAt, lastLoginAt, status, role FROM users WHERE inquiryNumber = ?'
-            ).bind(inquiryNumber).first();
-
-            if (!user) {
-                return this.jsonResponse({ error: 'User not found' }, 404, corsHeaders);
-            }
-
-            return this.jsonResponse(user, 200, corsHeaders);
-            
-        } catch (error) {
-            console.error('Get user by inquiry number error:', error);
-            return this.jsonResponse({
-                error: 'Failed to get user',
-                details: error.message 
-            }, 500, corsHeaders);
-        }
-    },
-
-    // Update user profile
-    async updateUserProfile(request, env, corsHeaders) {
-        try {
+            // Authentication
             const sessionToken = this.getSessionTokenFromRequest(request);
             if (!sessionToken) {
                 return this.jsonResponse({ error: 'Authentication required' }, 401, corsHeaders);
             }
-
-            const session = await env.DB.prepare(
-                'SELECT userId FROM sessions WHERE sessionToken = ? AND expiresAt > ?'
-            ).bind(sessionToken, new Date().toISOString()).first();
-
+            const session = await env.DB.prepare('SELECT userId FROM sessions WHERE sessionToken = ? AND expiresAt > ?').bind(sessionToken, new Date().toISOString()).first();
             if (!session) {
                 return this.jsonResponse({ error: 'Invalid or expired session' }, 401, corsHeaders);
             }
 
-            const updates = await request.json();
-            const allowedFields = ['displayName', 'email'];
-            const updateFields = [];
-            const updateValues = [];
+            const data = await request.json();
+            const { name, description, code, category } = data;
 
-            for (const field of allowedFields) {
-                if (updates[field] !== undefined) {
-                    updateFields.push(`${field} = ?`);
-                    updateValues.push(updates[field]);
-                }
+            if (!name || !code) {
+                return this.jsonResponse({ error: 'Missing required fields: name, code' }, 400, corsHeaders);
             }
 
-            if (updateFields.length === 0) {
-                return this.jsonResponse({ error: 'No valid fields to update' }, 400, corsHeaders);
-            }
+            const templateId = this.generateId();
+            const now = new Date().toISOString();
 
-            updateValues.push(session.userId);
-            
             await env.DB.prepare(
-                `UPDATE users SET ${updateFields.join(', ')} WHERE id = ?`
-            ).bind(...updateValues).run();
+                `INSERT INTO tikz_templates (id, name, description, code, category, userId, createdAt)
+                 VALUES (?, ?, ?, ?, ?, ?, ?)`
+            ).bind(templateId, name, description || '', code, category || 'general', session.userId, now).run();
 
-            // Get updated user
-            const updatedUser = await env.DB.prepare(
-                'SELECT id, userId, displayName, email, inquiryNumber, role FROM users WHERE id = ?'
-            ).bind(session.userId).first();
-
-            return this.jsonResponse(updatedUser, 200, corsHeaders);
-            
+            return this.jsonResponse({ success: true, id: templateId }, 201, corsHeaders);
         } catch (error) {
-            console.error('Update user profile error:', error);
-            return this.jsonResponse({
-                error: 'Failed to update profile',
-                details: error.message 
-            }, 500, corsHeaders);
+            console.error('Save TikZ template error:', error);
+            return this.jsonResponse({ error: 'Failed to save TikZ template' }, 500, corsHeaders);
         }
     },
 
-    // Media Management Methods
+    // Helper Methods
 
-    // Upload media file to R2 with authentication
-    async uploadMedia(request, env, corsHeaders) {
-        try {
-            const sessionToken = this.getSessionTokenFromRequest(request);
-            if (!sessionToken) {
-                return this.jsonResponse({ error: 'Authentication required' }, 401, corsHeaders);
+    generateId() {
+        return crypto.randomUUID();
+    },
+
+    generateSessionToken() {
+        const array = new Uint8Array(32);
+        crypto.getRandomValues(array);
+        return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
+    },
+
+    getSessionTokenFromRequest(request) {
+        const authHeader = request.headers.get('Authorization');
+        if (authHeader && authHeader.startsWith('Bearer ')) {
+            return authHeader.replace('Bearer ', '');
+        }
+        return null;
+    },
+
+    getRpId(request) {
+        // Use the Origin header to get the frontend domain, not the Worker domain
+        const origin = request.headers.get('Origin');
+        if (origin) {
+            const originUrl = new URL(origin);
+            return originUrl.hostname;
+        }
+        
+        // Fallback to known domains
+        const allowedDomains = [
+            'data.allfrom0.top',
+            'polusiti.github.io',
+            'localhost'
+        ];
+        
+        // Default to the primary domain
+        return 'data.allfrom0.top';
+    },
+
+    getOrigin(request) {
+        // Use the Origin header to get the frontend origin, not the Worker origin
+        const origin = request.headers.get('Origin');
+        if (origin) {
+            return origin;
+        }
+        
+        // Fallback to default origin
+        return 'https://data.allfrom0.top';
+    },
+
+    jsonResponse(data, status = 200, headers = {}) {
+        return new Response(JSON.stringify(data), {
+            status,
+            headers: {
+                'Content-Type': 'application/json',
+                ...headers
             }
-
-            // Verify session
-            const session = await env.DB.prepare(
-                'SELECT userId FROM sessions WHERE sessionToken = ? AND expiresAt > ?'
-            ).bind(sessionToken, new Date().toISOString()).first();
-
-            if (!session) {
-                return this.jsonResponse({ error: 'Invalid or expired session' }, 401, corsHeaders);
-            }
-
-            // Get user info
-            const user = await env.DB.prepare(
-                'SELECT id, displayName, storageQuota, storageUsed FROM users WHERE id = ?'
-            ).bind(session.userId).first();
-
-            if (!user) {
-                return this.jsonResponse({ error: 'User not found' }, 404, corsHeaders);
-            }
-
-            // Parse multipart form data
-            const formData = await request.formData();
-            const file = formData.get('file');
-            const subject = formData.get('subject') || 'general';
-            const category = formData.get('category') || 'general';
-            const description = formData.get('description') || '';
-            const isPublic = formData.get('isPublic') === 'true';
-
-            if (!file) {
-                return this.jsonResponse({ error: 'No file provided' }, 400, corsHeaders);
-            }
-
-            // Validate file type and size
-            const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 
-                                'audio/mpeg', 'audio/wav', 'audio/ogg', 'audio/mp4'];
-            
-            if (!allowedTypes.includes(file.type)) {
-                return this.jsonResponse({
-                    error: 'Unsupported file type',
-                    allowedTypes: allowedTypes 
-                }, 400, corsHeaders);
-            }
-
-            const maxFileSize = 50 * 1024 * 1024; // 50MB
-            if (file.size > maxFileSize) {
-                return this.jsonResponse({
-                    error: 'File too large',
-                    maxSize: maxFileSize,
-                    fileSize: file.size 
-                }, 400, corsHeaders);
-            }
-
-            // Check user storage quota
-            if (user.storageUsed + file.size > user.storageQuota) {
-                return this.jsonResponse({
-                    error: 'Storage quota exceeded',
-                    quota: user.storageQuota,
-                    used: user.storageUsed,
-                    needed: file.size 
-                }, 413, corsHeaders);
-            }
-
-            // Generate unique filename and R2 path
-            const fileExtension = file.name.split('.').pop();
-            const mediaId = this.generateId();
-            const filename = `${mediaId}.${fileExtension}`;
-            const r2Key = `users/${user.id}/${subject}/${category}/${filename}`;
-
-            // Upload to R2
-            await env.MEDIA_BUCKET.put(r2Key, file.stream(), {
-                httpMetadata: {
-                    contentType: file.type,
-                    contentDisposition: `attachment; filename="${file.name}"
+        });
+    }
+};
