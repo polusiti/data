@@ -723,8 +723,8 @@
                     <button class="latex-btn" data-latex="\log" title="対数">$\log$</button>
                     <button class="latex-btn" data-latex="\ln" title="自然対数">$\ln$</button>
                     <button class="latex-btn" data-latex="\log_{a}" title="底a対数">$\log_{a}$</button>
-                    <button class="latex-btn" data-latex="e^{}" title="指数関数">$e^{x}$</button>
-                    <button class="latex-btn" data-latex="a^{}" title="べき乗">$a^{x}$</button>
+                    <button class="latex-btn" data-latex="e^{x}" title="指数関数">$e^{x}$</button>
+                    <button class="latex-btn" data-latex="a^{x}" title="べき乗">$a^{x}$</button>
 
                     <!-- 微分 -->
                     <button class="latex-btn" data-latex="\frac{d}{dx}" title="微分">$\frac{d}{dx}$</button>
@@ -1097,7 +1097,7 @@ x^2 + 2x + 1 = 0
                             '\\lim_{x \\to a}', '\\lim_{n \\to \\infty}',
                             '\\frac{d}{dx}', '\\frac{dy}{dx}', '\\frac{d^2}{dx^2}',
                             '\\frac{\\partial}{\\partial x}', '\\nabla',
-                            '\\sin', '\\cos', '\\tan', '\\log', '\\ln', 'e^{}'
+                            '\\sin', '\\cos', '\\tan', '\\log', '\\ln', 'e^{x}'
                         ]);
                         break;
                     case 'geometry':
@@ -1105,7 +1105,7 @@ x^2 + 2x + 1 = 0
                             '\\angle', '\\triangle', '\\parallel', '\\perp',
                             '\\sin', '\\cos', '\\tan', '\\arcsin', '\\arccos', '\\arctan',
                             '\\pi', '\\theta', '\\alpha', '\\beta', '\\gamma',
-                            '\\sqrt{}', '^{}', '\\circ', '\\approx', '\\sim'
+                            '\\sqrt{x}', 'x^{n}', '\\circ', '\\approx', '\\sim'
                         ]);
                         break;
                     case 'probability':
@@ -1120,7 +1120,7 @@ x^2 + 2x + 1 = 0
                         this.highlightButtons([
                             '\\bar{x}', '\\hat{x}', '\\tilde{x}',
                             'E[X]', '\\text{Var}(X)', '\\sigma', '\\mu',
-                            '\\sum_{i=1}^{n}', '\\frac{}{}', '\\sqrt{}',
+                            '\\sum_{i=1}^{n}', '\\frac{a}{b}', '\\sqrt{x}',
                             '\\leq', '\\geq', '\\approx', '\\pm'
                         ]);
                         break;
