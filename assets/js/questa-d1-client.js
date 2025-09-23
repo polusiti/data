@@ -1,518 +1,314 @@
-/**
- * Enhanced QuestaD1Client with Search Functionality
- * Extends the existing D1 client architecture to support search operations
- */
+(function(){
+  const API_BASE = 'https://data-manager-auth.t88596565.workers.dev/api';
 
-class QuestaD1Client {
+  class QuestaD1Client {
     constructor(config = {}) {
-        // Use existing configuration pattern
-        this.baseUrl = config.baseUrl || 'https://data-manager-auth.t88596565.workers.dev/api';
-        this.d1BaseURL = config.d1BaseURL || '/api/d1';
-        this.r2BaseURL = config.r2BaseURL || '/api/r2';
-        this.adminToken = config.adminToken || localStorage.getItem('admin_token');
-        this.fallbackMode = config.fallbackMode !== false; // Default to true
-        this.sessionToken = localStorage.getItem('sessionToken');
+      this.baseUrl = config.baseUrl || API_BASE;
     }
 
-    // Get authentication headers
+    // Common helpers
     getAuthHeaders() {
-        const headers = {
-            'Content-Type': 'application/json'
-        };
-        
-        if (this.sessionToken) {
-            headers['Authorization'] = `Bearer ${this.sessionToken}`;
-        } else if (this.adminToken) {
-            headers['Authorization'] = `Bearer ${this.adminToken}`;
-        }
-        
-        return headers;
+      // Cookie セッション前提なので Authorization は付与しない
+      return { 'Content-Type': 'application/json' };
     }
 
-    // Check if D1 server is available
+    async _request(path, { method='GET', headers={}, body=undefined, query=null } = {}) {
+      const url = new URL(this.baseUrl + path);
+      if (query && typeof query === 'object') {
+        Object.entries(query).forEach(([k,v]) => {
+          if (v !== undefined && v !== null) url.searchParams.set(k, String(v));
+        });
+      }
+      const res = await fetch(url.toString(), {
+        method,
+        headers: { ...this.getAuthHeaders(), ...headers },
+        credentials: 'include',
+        body
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok || (json && json.success === false)) {
+        const msg = json?.error || `${method} ${path} failed: ${res.status}`;
+        throw new Error(msg);
+      }
+      return json;
+    }
+
+    // Health
     async isD1Available() {
-        try {
-            const response = await fetch(`${this.baseUrl}/health`, {
-                method: 'GET',
-                headers: this.getAuthHeaders(),
-                signal: AbortSignal.timeout(2000)
-            });
-            return response.ok;
-        } catch (error) {
-            console.warn('D1サーバーが利用できません。ローカルモードで動作します。');
-            return false;
-        }
+      try {
+        const res = await this._request('/health', { method: 'GET' });
+        return res?.ok !== false;
+      } catch {
+        return false;
+      }
     }
 
-    // ========================================
-    // SEARCH FUNCTIONALITY
-    // ========================================
+    // --------------------------------
+    // Questions (検索/取得/保存/削除/統計)
+    // --------------------------------
 
     /**
-     * Search questions with advanced filtering
-     * @param {string} query - Search query text
-     * @param {Object} filters - Filter options
-     * @param {string} sort - Sort option
-     * @param {number} limit - Results limit
-     * @param {number} offset - Results offset
-     * @returns {Promise<Array>} Search results
+     * 検索: /search/questions?q=&sort=&limit=&offset=&...filters
      */
     async searchQuestions(query = '', filters = {}, sort = 'created_desc', limit = 20, offset = 0) {
-        if (this.fallbackMode && !(await this.isD1Available())) {
-            return this.searchQuestionsFromLocalStorage(query, filters, sort, limit, offset);
-        }
-
-        try {
-            const searchParams = new URLSearchParams({
-                q: query,
-                sort,
-                limit: limit.toString(),
-                offset: offset.toString(),
-                ...this.buildFilterParams(filters)
-            });
-
-            const response = await fetch(`${this.baseUrl}/search/questions?${searchParams}`, {
-                method: 'GET',
-                headers: this.getAuthHeaders()
-            });
-
-            if (!response.ok) {
-                throw new Error(`Search error: ${response.status}`);
-            }
-
-            const result = await response.json();
-            return result.questions || [];
-
-        } catch (error) {
-            console.error('D1 search error:', error);
-            if (this.fallbackMode) {
-                return this.searchQuestionsFromLocalStorage(query, filters, sort, limit, offset);
-            }
-            throw error;
-        }
+      const q = {
+        q: query || '',
+        sort,
+        limit,
+        offset,
+        ...this._buildFilterParams(filters)
+      };
+      const res = await this._request('/search/questions', { query: q });
+      return Array.isArray(res.questions) ? res.questions.map(this.formatQuestion) : [];
     }
 
     /**
-     * Get questions by subject with filtering (existing method enhanced)
+     * 科目別取得: /questions?subject=&limit=&offset=&filters...
      */
     async getQuestionsBySubject(subject, filters = {}, limit = 50, offset = 0) {
-        if (this.fallbackMode && !(await this.isD1Available())) {
-            return this.getQuestionsFromLocalStorage(subject, filters);
-        }
-
-        try {
-            const searchParams = new URLSearchParams({
-                subject,
-                limit: limit.toString(),
-                offset: offset.toString(),
-                ...this.buildFilterParams(filters)
-            });
-
-            const response = await fetch(`${this.baseUrl}/questions?${searchParams}`, {
-                method: 'GET',
-                headers: this.getAuthHeaders()
-            });
-
-            if (!response.ok) {
-                throw new Error(`Questions fetch error: ${response.status}`);
-            }
-
-            const result = await response.json();
-            return result.questions || [];
-
-        } catch (error) {
-            console.error('D1 questions fetch error:', error);
-            if (this.fallbackMode) {
-                return this.getQuestionsFromLocalStorage(subject, filters);
-            }
-            throw error;
-        }
+      const q = {
+        subject,
+        limit,
+        offset,
+        ...this._buildFilterParams(filters)
+      };
+      const res = await this._request('/questions', { query: q });
+      return Array.isArray(res.questions) ? res.questions.map(this.formatQuestion) : [];
     }
 
     /**
-     * Get question statistics for search suggestions
+     * サジェスト: /search/suggestions?q=&limit=
      */
-    async getSearchSuggestions(query, limit = 10) {
-        if (this.fallbackMode && !(await this.isD1Available())) {
-            return this.getSearchSuggestionsFromLocalStorage(query, limit);
-        }
-
-        try {
-            const searchParams = new URLSearchParams({
-                q: query,
-                limit: limit.toString()
-            });
-
-            const response = await fetch(`${this.baseUrl}/search/suggestions?${searchParams}`, {
-                method: 'GET',
-                headers: this.getAuthHeaders()
-            });
-
-            if (!response.ok) {
-                throw new Error(`Suggestions fetch error: ${response.status}`);
-            }
-
-            const result = await response.json();
-            return result.suggestions || [];
-
-        } catch (error) {
-            console.error('D1 suggestions error:', error);
-            if (this.fallbackMode) {
-                return this.getSearchSuggestionsFromLocalStorage(query, limit);
-            }
-            return [];
-        }
+    async getSearchSuggestions(q = '', limit = 10) {
+      if (!q || q.length < 2) return [];
+      const res = await this._request('/search/suggestions', { query: { q, limit } });
+      return Array.isArray(res.suggestions) ? res.suggestions : [];
     }
 
     /**
-     * Get question by ID
+     * 質問単体取得: /questions/:id
      */
     async getQuestionById(questionId) {
-        if (this.fallbackMode && !(await this.isD1Available())) {
-            return this.getQuestionFromLocalStorageById(questionId);
-        }
-
-        try {
-            const response = await fetch(`${this.baseUrl}/questions/${questionId}`, {
-                method: 'GET',
-                headers: this.getAuthHeaders()
-            });
-
-            if (!response.ok) {
-                throw new Error(`Question fetch error: ${response.status}`);
-            }
-
-            const result = await response.json();
-            return result.question;
-
-        } catch (error) {
-            console.error('D1 question fetch error:', error);
-            if (this.fallbackMode) {
-                return this.getQuestionFromLocalStorageById(questionId);
-            }
-            throw error;
-        }
-    }
-
-    // ========================================
-    // UTILITY METHODS
-    // ========================================
-
-    /**
-     * Build filter parameters for API requests
-     */
-    buildFilterParams(filters) {
-        const params = {};
-        
-        if (filters.subjects && filters.subjects.length > 0) {
-            params.subjects = filters.subjects.join(',');
-        }
-        
-        if (filters.difficulties && filters.difficulties.length > 0) {
-            params.difficulties = filters.difficulties.join(',');
-        }
-        
-        if (filters.types && filters.types.length > 0) {
-            params.types = filters.types.join(',');
-        }
-        
-        if (filters.tags && filters.tags.length > 0) {
-            params.tags = filters.tags.join(',');
-        }
-        
-        if (filters.field_code) {
-            params.field_code = filters.field_code;
-        }
-        
-        if (filters.answer_format) {
-            params.answer_format = filters.answer_format;
-        }
-        
-        return params;
-    }
-
-    // ========================================
-    // LOCAL STORAGE FALLBACK METHODS
-    // ========================================
-
-    /**
-     * Search questions from localStorage as fallback
-     */
-    async searchQuestionsFromLocalStorage(query, filters, sort, limit, offset) {
-        console.log('🔍 Searching from localStorage fallback');
-        
-        const allQuestions = await this.getAllQuestionsFromLocalStorage();
-        let filteredQuestions = allQuestions;
-
-        // Apply text search
-        if (query && query.trim()) {
-            const searchTerms = query.toLowerCase().split(' ').filter(term => term.length > 0);
-            filteredQuestions = filteredQuestions.filter(question => {
-                const searchText = `${question.title || ''} ${question.question || ''} ${(question.tags || []).join(' ')}`.toLowerCase();
-                return searchTerms.some(term => searchText.includes(term));
-            });
-        }
-
-        // Apply filters
-        if (filters.subjects && filters.subjects.length > 0) {
-            filteredQuestions = filteredQuestions.filter(q => filters.subjects.includes(q.subject));
-        }
-
-        if (filters.difficulties && filters.difficulties.length > 0) {
-            filteredQuestions = filteredQuestions.filter(q => filters.difficulties.includes(q.difficulty));
-        }
-
-        if (filters.types && filters.types.length > 0) {
-            filteredQuestions = filteredQuestions.filter(q => filters.types.includes(q.type));
-        }
-
-        // Apply sorting
-        filteredQuestions.sort((a, b) => {
-            switch (sort) {
-                case 'created_desc':
-                    return new Date(b.created_at || 0) - new Date(a.created_at || 0);
-                case 'created_asc':
-                    return new Date(a.created_at || 0) - new Date(b.created_at || 0);
-                case 'difficulty_asc':
-                    return (a.difficulty || 0) - (b.difficulty || 0);
-                case 'difficulty_desc':
-                    return (b.difficulty || 0) - (a.difficulty || 0);
-                case 'relevance':
-                    if (!query) return 0;
-                    const scoreA = this.calculateRelevanceScore(a, query);
-                    const scoreB = this.calculateRelevanceScore(b, query);
-                    return scoreB - scoreA;
-                default:
-                    return 0;
-            }
-        });
-
-        // Apply pagination
-        return filteredQuestions.slice(offset, offset + limit);
+      const res = await this._request(`/questions/${encodeURIComponent(questionId)}`, { method: 'GET' });
+      return res.question ? this.formatQuestion(res.question) : null;
     }
 
     /**
-     * Get all questions from localStorage
+     * 質問保存: POST /questions
      */
-    async getAllQuestionsFromLocalStorage() {
-        const questions = [];
-        const subjects = ['math', 'english', 'chemistry', 'physics', 'japanese'];
-        
-        for (const subject of subjects) {
-            const subjectQuestions = await this.getQuestionsFromLocalStorage(subject);
-            if (subjectQuestions.success && subjectQuestions.questions) {
-                questions.push(...subjectQuestions.questions.map(q => ({ ...q, subject })));
-            }
-        }
-        
-        // Also check for individual question items
-        for (let key in localStorage) {
-            if (key.startsWith('question_')) {
-                try {
-                    const questionData = JSON.parse(localStorage.getItem(key));
-                    if (questionData && questionData.id) {
-                        questions.push(questionData);
-                    }
-                } catch (e) {
-                    // Ignore malformed data
-                }
-            }
-        }
-        
-        return questions;
-    }
-
-    /**
-     * Get questions from localStorage by subject
-     */
-    async getQuestionsFromLocalStorage(subject, filters = {}) {
-        const storageKeys = [
-            `${subject}_questions_backup`,
-            `${subject}Questions`, // Legacy format
-            `${subject}_questions`
-        ];
-        
-        for (const storageKey of storageKeys) {
-            const stored = localStorage.getItem(storageKey);
-            if (stored) {
-                try {
-                    const data = JSON.parse(stored);
-                    let questions = [];
-                    
-                    if (Array.isArray(data)) {
-                        questions = data;
-                    } else if (data.questions && Array.isArray(data.questions)) {
-                        questions = data.questions;
-                    }
-                    
-                    // Apply filters
-                    if (filters.difficulties && filters.difficulties.length > 0) {
-                        questions = questions.filter(q => filters.difficulties.includes(q.difficulty));
-                    }
-                    
-                    if (filters.types && filters.types.length > 0) {
-                        questions = questions.filter(q => filters.types.includes(q.type));
-                    }
-                    
-                    console.log(`📁 Retrieved ${questions.length} questions from localStorage:`, storageKey);
-                    return { success: true, questions, mode: 'localStorage' };
-                } catch (e) {
-                    console.warn(`Failed to parse localStorage data for key: ${storageKey}`, e);
-                }
-            }
-        }
-        
-        return { success: false, questions: [], mode: 'localStorage' };
-    }
-
-    /**
-     * Get question by ID from localStorage
-     */
-    async getQuestionFromLocalStorageById(questionId) {
-        const storageKey = `question_${questionId}`;
-        const stored = localStorage.getItem(storageKey);
-        
-        if (stored) {
-            try {
-                return JSON.parse(stored);
-            } catch (e) {
-                console.warn('Failed to parse question from localStorage:', questionId);
-            }
-        }
-        
-        // Search in subject collections
-        const allQuestions = await this.getAllQuestionsFromLocalStorage();
-        return allQuestions.find(q => q.id === questionId) || null;
-    }
-
-    /**
-     * Get search suggestions from localStorage
-     */
-    async getSearchSuggestionsFromLocalStorage(query, limit) {
-        const allQuestions = await this.getAllQuestionsFromLocalStorage();
-        const suggestions = new Set();
-        
-        const queryLower = query.toLowerCase();
-        
-        allQuestions.forEach(question => {
-            // Add title suggestions
-            if (question.title && question.title.toLowerCase().includes(queryLower)) {
-                suggestions.add(question.title);
-            }
-            
-            // Add tag suggestions
-            if (question.tags) {
-                question.tags.forEach(tag => {
-                    if (tag.toLowerCase().includes(queryLower)) {
-                        suggestions.add(tag);
-                    }
-                });
-            }
-        });
-        
-        return Array.from(suggestions).slice(0, limit);
-    }
-
-    /**
-     * Calculate relevance score for search sorting
-     */
-    calculateRelevanceScore(question, query) {
-        const searchTerms = query.toLowerCase().split(' ');
-        const title = (question.title || '').toLowerCase();
-        const content = (question.question || '').toLowerCase();
-        const tags = (question.tags || []).join(' ').toLowerCase();
-        
-        let score = 0;
-        
-        searchTerms.forEach(term => {
-            // Title matches get higher score
-            if (title.includes(term)) {
-                score += 10;
-            }
-            
-            // Content matches
-            if (content.includes(term)) {
-                score += 5;
-            }
-            
-            // Tag matches
-            if (tags.includes(term)) {
-                score += 3;
-            }
-        });
-        
-        return score;
-    }
-
-    // ========================================
-    // EXISTING METHODS (preserved)
-    // ========================================
-
     async saveQuestion(questionData) {
-        if (this.fallbackMode && !(await this.isD1Available())) {
-            return this.saveQuestionToLocalStorage(questionData);
+      const res = await this._request('/questions', {
+        method: 'POST',
+        body: JSON.stringify(questionData)
+      });
+      return { success: true, mode: 'd1', data: res };
+    }
+
+    /**
+     * 質問削除: DELETE /questions/:id
+     */
+    async deleteQuestion(questionId) {
+      const res = await this._request(`/questions/${encodeURIComponent(questionId)}`, { method: 'DELETE' });
+      return { success: true, data: res };
+    }
+
+    /**
+     * 科目統計: GET /statistics/subject?subject=
+     */
+    async getSubjectStatistics(subject) {
+      const res = await this._request('/statistics/subject', { query: { subject } });
+      return { success: true, data: res.data || res };
+    }
+
+    _buildFilterParams(filters = {}) {
+      const params = {};
+      if (filters.subjects?.length) params.subjects = filters.subjects.join(',');
+      if (filters.difficulties?.length) params.difficulties = filters.difficulties.join(',');
+      if (filters.types?.length) params.types = filters.types.join(',');
+      if (filters.tags?.length) params.tags = filters.tags.join(',');
+      if (filters.field_code) params.field_code = filters.field_code;
+      if (filters.answer_format) params.answer_format = filters.answer_format;
+      if (filters.answer_formats?.length) params.answer_formats = filters.answer_formats.join(',');
+      if (filters.search) params.search = filters.search;
+      if (filters.sort_by) params.sort_by = filters.sort_by;
+      if (filters.sort_order) params.sort_order = filters.sort_order;
+      return params;
+    }
+
+    // --------------------------------
+    // Problems（最近の問題・投稿・取得・削除・ユーザー別）
+    // --------------------------------
+
+    /**
+     * 最近の問題一覧: GET /problems?limit&offset
+     */
+    async getRecentProblems(limit = 10, offset = 0) {
+      const res = await this._request('/problems', { query: { limit, offset } });
+      return Array.isArray(res.problems) ? res.problems : [];
+    }
+
+    /**
+     * 問題作成: POST /problems
+     */
+    async addProblem(problem) {
+      const res = await this._request('/problems', {
+        method: 'POST',
+        body: JSON.stringify(problem)
+      });
+      return { success: true, id: res.id || res.problem?.id };
+    }
+
+    /**
+     * 問題単体取得: GET /problems/:id
+     */
+    async getProblemById(id) {
+      const res = await this._request(`/problems/${encodeURIComponent(id)}`, { method: 'GET' });
+      return res.problem || null;
+    }
+
+    /**
+     * ユーザー別問題: GET /problems?author=
+     */
+    async getProblemsByUser(author, limit = 50, offset = 0) {
+      const res = await this._request('/problems', { query: { author, limit, offset } });
+      return Array.isArray(res.problems) ? res.problems : [];
+    }
+
+    /**
+     * 問題削除: DELETE /problems/:id
+     */
+    async deleteProblem(problemId) {
+      await this._request(`/problems/${encodeURIComponent(problemId)}`, { method: 'DELETE' });
+      return { success: true };
+    }
+
+    // --------------------------------
+    // Comments（保存・一覧・返信・いいね・削除・通報・統計）
+    // --------------------------------
+
+    /**
+     * コメント保存: POST /comments
+     */
+    async saveComment(comment) {
+      const res = await this._request('/comments', {
+        method: 'POST',
+        body: JSON.stringify(comment)
+      });
+      return res.comment ? this.formatComment(res.comment) : null;
+    }
+
+    /**
+     * 問題のコメント一覧: GET /comments?problem_id=&limit=&offset=
+     */
+    async getCommentsByProblem(problemId, limit = 50, offset = 0) {
+      const res = await this._request('/comments', { query: { problem_id: problemId, limit, offset } });
+      return Array.isArray(res.comments) ? res.comments.map(this.formatComment) : [];
+    }
+
+    /**
+     * 返信一覧: GET /comments/:id/replies
+     */
+    async getCommentReplies(commentId) {
+      const res = await this._request(`/comments/${encodeURIComponent(commentId)}/replies`, { method: 'GET' });
+      return Array.isArray(res.comments) ? res.comments.map(this.formatComment) : [];
+    }
+
+    /**
+     * いいねトグル: POST /comments/:id/like
+     */
+    async toggleCommentLike(commentId) {
+      await this._request(`/comments/${encodeURIComponent(commentId)}/like`, { method: 'POST' });
+      return { success: true };
+    }
+
+    /**
+     * コメント削除: DELETE /comments/:id
+     */
+    async deleteComment(commentId) {
+      await this._request(`/comments/${encodeURIComponent(commentId)}`, { method: 'DELETE' });
+      return { success: true };
+    }
+
+    /**
+     * コメント通報: POST /comments/:id/report
+     */
+    async reportComment(commentId, reason = '') {
+      await this._request(`/comments/${encodeURIComponent(commentId)}/report`, {
+        method: 'POST',
+        body: JSON.stringify({ reason })
+      });
+      return { success: true };
+    }
+
+    /**
+     * コメント統計: GET /comments/stats?problem_id=
+     */
+    async getCommentStats(problemId) {
+      const res = await this._request('/comments/stats', { query: { problem_id: problemId } });
+      return { success: true, stats: res.stats || res };
+    }
+
+    // --------------------------------
+    // Answers（必要に応じて）
+    // --------------------------------
+
+    /**
+     * 解答投稿: POST /answers
+     */
+    async addAnswer({ problem_id, content }) {
+      const res = await this._request('/answers', {
+        method: 'POST',
+        body: JSON.stringify({ problem_id, content })
+      });
+      return res.answer || null;
+    }
+
+    /**
+     * 解答一覧: GET /answers?problem_id=
+     */
+    async getAnswersByProblem(problemId, limit = 50, offset = 0) {
+      const res = await this._request('/answers', { query: { problem_id: problemId, limit, offset } });
+      return Array.isArray(res.answers) ? res.answers : [];
+    }
+
+    // --------------------------------
+    // Utilities (formatters)
+    // --------------------------------
+
+    formatQuestion(question) {
+      const formatted = { ...question };
+      // JSON文字列の安全パース
+      try {
+        if (formatted.choices && typeof formatted.choices === 'string') {
+          formatted.choices = JSON.parse(formatted.choices);
         }
-
-        try {
-            const response = await fetch(`${this.baseUrl}/questions`, {
-                method: 'POST',
-                headers: this.getAuthHeaders(),
-                body: JSON.stringify(questionData)
-            });
-
-            if (!response.ok) {
-                throw new Error(`D1 save error: ${response.status}`);
-            }
-
-            const result = await response.json();
-            console.log('✅ Question saved to D1:', result);
-            return { success: true, mode: 'd1', data: result };
-
-        } catch (error) {
-            console.error('D1 save error:', error);
-            if (this.fallbackMode) {
-                return this.saveQuestionToLocalStorage(questionData);
-            }
-            throw error;
+      } catch { formatted.choices = []; }
+      try {
+        if (formatted.tags && typeof formatted.tags === 'string') {
+          formatted.tags = JSON.parse(formatted.tags);
         }
+      } catch { formatted.tags = []; }
+      try {
+        if (formatted.media_urls && typeof formatted.media_urls === 'string') {
+          formatted.media_urls = JSON.parse(formatted.media_urls);
+        }
+      } catch { formatted.media_urls = []; }
+      return formatted;
     }
 
-    saveQuestionToLocalStorage(questionData) {
-        const storageKey = `question_${questionData.id}`;
-        const data = {
-            ...questionData,
-            savedAt: new Date().toISOString(),
-            mode: 'localStorage_fallback'
-        };
-        localStorage.setItem(storageKey, JSON.stringify(data));
-        console.log('💾 Question saved to localStorage:', data);
-        return { success: true, mode: 'localStorage', key: storageKey };
+    formatComment(comment) {
+      const formatted = { ...comment };
+      try {
+        if (formatted.media_urls && typeof formatted.media_urls === 'string') {
+          formatted.media_urls = JSON.parse(formatted.media_urls);
+        }
+      } catch { formatted.media_urls = []; }
+      formatted.likes = parseInt(formatted.likes || 0, 10);
+      return formatted;
     }
+  }
 
-    // Set admin token
-    setAdminToken(token) {
-        this.adminToken = token;
-        localStorage.setItem('admin_token', token);
-    }
-
-    // Set session token
-    setSessionToken(token) {
-        this.sessionToken = token;
-        localStorage.setItem('sessionToken', token);
-    }
-
-    // Clear tokens
-    clearTokens() {
-        this.adminToken = null;
-        this.sessionToken = null;
-        localStorage.removeItem('admin_token');
-        localStorage.removeItem('sessionToken');
-    }
-}
-
-// Export for use in different contexts
-if (typeof module !== 'undefined' && module.exports) {
-    module.exports = QuestaD1Client;
-} else if (typeof window !== 'undefined') {
-    window.QuestaD1Client = QuestaD1Client;
-}
+  // Global instance
+  window.QuestaD1Client = QuestaD1Client;
+  window.questaD1 = new QuestaD1Client();
+})();
