@@ -135,28 +135,6 @@
             text-align: center;
         }
 
-        /* Mobile Optimizations */
-        @media (max-width: 768px) {
-            .action-btn {
-                min-height: 100px;
-                padding: 0.75rem;
-            }
-
-            .action-btn .icon {
-                width: 35px;
-                height: 35px;
-                font-size: 1.1rem;
-            }
-
-            .action-btn .title {
-                font-size: 0.9rem;
-            }
-
-            .action-btn .desc {
-                font-size: 0.75rem;
-            }
-        }
-
         /* Problem Cards */
         .problem-card {
             background: white;
@@ -165,6 +143,7 @@
             margin-bottom: 1rem;
             box-shadow: 0 2px 10px rgba(0,0,0,0.08);
             border: 1px solid var(--border-light);
+            cursor: pointer;
         }
 
         .problem-header {
@@ -545,8 +524,8 @@
                             <select class="form-select" id="subject" required>
                                 <option value="">選択してください</option>
                                 <option value="math">数学</option>
-                                <option value="english">物理</option>
-                                <option value="science">化学</option>
+                                <option value="physics">物理</option>
+                                <option value="chemistry">化学</option>
                                 <option value="general">その他</option>
                             </select>
                         </div>
@@ -556,7 +535,7 @@
                         </div>
                         <div class="mb-3">
                             <label for="content" class="form-label">問題内容</label>
-                            <textarea class="form-control" id="content" rows="4" required maxlength="1000"></textarea>
+                            <textarea class="form-control" id="content" rows="4" required maxlength="2000"></textarea>
                         </div>
                         <div class="mb-3">
                             <label for="difficulty" class="form-label">難易度</label>
@@ -582,16 +561,20 @@
 
     <!-- Bootstrap 5 JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <!-- Authentication Client -->
-    <script src="auth-d1-client.js"></script>
-    <!-- D1 Client -->
-    <script src="questa-d1-client.js"></script>
+
+    <!-- Auth / D1 / R2 Clients (server-only, no local fallback) -->
+    <script src="assets/js/auth-d1-client.js"></script>
+    <script src="assets/js/questa-d1-client.js"></script>
+    <script src="assets/js/questa-r2-client.js"></script>
 
     <script>
+        const API_BASE = 'https://data-manager-auth.t88596565.workers.dev/api';
+
         class MobileProblemApp {
             constructor() {
                 this.authClient = window.authClient;
-                this.d1Client = new QuestaD1Client();
+                this.d1Client = window.questaD1;
+                this.r2Client = window.questaR2;
                 this.problems = [];
                 this.currentProblem = null;
                 this.currentFilter = 'all';
@@ -599,86 +582,45 @@
             }
 
             async init() {
-                // Check authentication status
                 await this.updateAuthStatus();
-                
-                // Load initial problems
                 await this.loadProblems();
-                
-                // Setup event listeners
                 this.setupEventListeners();
             }
 
             async updateAuthStatus() {
-                // まずlocalStorageの状態を確認
-                const storedUser = localStorage.getItem('currentUser');
-                const storedToken = localStorage.getItem('sessionToken');
-
-                console.log('localStorage currentUser:', storedUser);
-                console.log('localStorage sessionToken:', storedToken);
-
-                const user = this.authClient.getCurrentUser();
                 const authStatus = document.getElementById('auth-status');
                 const navAuth = document.getElementById('nav-auth');
 
-                console.log('updateAuthStatus called, user:', user);
-                console.log('sessionToken:', this.authClient.sessionToken);
-                console.log('isLoggedIn:', this.authClient.isLoggedIn());
+                try {
+                    await this.authClient.refresh();
+                } catch (e) {
+                    // ignore
+                }
 
-                // 正しい判定: sessionTokenがあり、かつユーザーが存在する場合のみログイン状態
-                if (this.authClient.sessionToken && user) {
-                    console.log('User found with valid session, setting logout UI');
-                    authStatus.innerHTML = `<i class="fas fa-user"></i> ${user.displayName || user.userId}`;
+                const user = this.authClient.getCurrentUser();
+
+                if (user) {
+                    authStatus.innerHTML = `<i class="fas fa-user"></i> ${user.displayName || user.userId || 'User'}`;
                     navAuth.innerHTML = '<i class="fas fa-sign-out-alt"></i> ログアウト';
                     navAuth.href = '#';
                     navAuth.onclick = () => this.logout();
-
-                    // プロフィールボタンを表示
                     const navProfileItem = document.getElementById('nav-profile-item');
-                    if (navProfileItem) {
-                        navProfileItem.style.display = 'block';
-                    }
+                    if (navProfileItem) navProfileItem.style.display = 'block';
                     const bottomNavProfile = document.getElementById('bottom-nav-profile');
-                    if (bottomNavProfile) {
-                        bottomNavProfile.style.display = 'block';
-                    }
+                    if (bottomNavProfile) bottomNavProfile.style.display = 'block';
                 } else {
-                    console.log('No valid session or user, setting login UI');
-                    // sessionTokenがない場合は強制的にユーザーデータもクリア
-                    if (!this.authClient.sessionToken) {
-                        this.authClient.currentUser = null;
-                        localStorage.removeItem('currentUser');
-                    }
                     authStatus.innerHTML = '<i class="fas fa-sign-in-alt"></i> ログインしてください';
                     navAuth.innerHTML = '<i class="fas fa-sign-in-alt"></i> ログイン';
                     navAuth.href = 'auth.html';
                     navAuth.onclick = null;
-
-                    // プロフィールボタンを非表示
                     const navProfileItem = document.getElementById('nav-profile-item');
-                    if (navProfileItem) {
-                        navProfileItem.style.display = 'none';
-                    }
+                    if (navProfileItem) navProfileItem.style.display = 'none';
                     const bottomNavProfile = document.getElementById('bottom-nav-profile');
-                    if (bottomNavProfile) {
-                        bottomNavProfile.style.display = 'none';
-                    }
-                }
-                
-                // Add demo login option if not logged in
-                if (!this.authClient.sessionToken || !user) {
-                    setTimeout(() => {
-                        const demoButton = document.createElement('button');
-                        demoButton.className = 'btn btn-outline-primary btn-sm ms-2';
-                        demoButton.innerHTML = '<i class="fas fa-user-cog"></i> デモ';
-                        demoButton.onclick = () => this.demoLogin();
-                        authStatus.appendChild(demoButton);
-                    }, 1000);
+                    if (bottomNavProfile) bottomNavProfile.style.display = 'none';
                 }
             }
 
             setupEventListeners() {
-                // Bottom nav active state
                 document.querySelectorAll('.bottom-nav-item').forEach(item => {
                     item.addEventListener('click', (e) => {
                         e.preventDefault();
@@ -688,59 +630,48 @@
                 });
             }
 
-            async loadProblems() {
-                try {
-                    // Mock data for demonstration
-                    const mockProblems = [
-                        {
-                            id: 1,
-                            subject: 'math',
-                            title: '二次方程式の解の公式を使って次の方程式を解きなさい',
-                            difficulty: 3,
-                            author: 'math_teacher',
-                            createdAt: '2時間前',
-                            views: 45,
-                            solved: 12
-                        },
-                        {
-                            id: 2,
-                            subject: 'english',
-                            title: '斜方投射における最高点の高さを求める問題',
-                            difficulty: 4,
-                            author: 'physics_teacher',
-                            createdAt: '4時間前',
-                            views: 78,
-                            solved: 34
-                        },
-                        {
-                            id: 3,
-                            subject: 'science',
-                            title: '化学反応式のバランス調整と反応量計算',
-                            difficulty: 3,
-                            author: 'chem_sensei',
-                            createdAt: '6時間前',
-                            views: 23,
-                            solved: 8
-                        }
-                    ];
+            async loadProblems(limit = 10, offset = 0) {
+                const container = document.getElementById('problems-container');
+                if (container) {
+                    container.innerHTML = `
+                        <div class="loading">
+                            <i class="fas fa-spinner"></i>
+                            <p>問題を読み込み中...</p>
+                        </div>
+                    `;
+                }
 
-                    this.problems = mockProblems;
+                try {
+                    const rows = await this.d1Client.getRecentProblems(limit, offset);
+                    this.problems = rows.map(row => ({
+                        id: row.id,
+                        subject: row.subject || 'general',
+                        title: row.title || '(無題)',
+                        content: row.content || '',
+                        difficulty: parseInt(row.difficulty || 1, 10),
+                        author: row.author || 'unknown',
+                        createdAt: row.created_at || row.createdAt || '',
+                        views: parseInt(row.views || 0, 10),
+                        solved: parseInt(row.solved || 0, 10)
+                    }));
                     this.renderProblems();
                 } catch (error) {
                     console.error('Failed to load problems:', error);
-                    document.getElementById('problems-container').innerHTML = `
-                        <div class="text-center text-muted py-4">
-                            <i class="fas fa-exclamation-circle"></i>
-                            <p>問題の読み込みに失敗しました</p>
-                        </div>
-                    `;
+                    if (container) {
+                        container.innerHTML = `
+                            <div class="text-center text-muted py-4">
+                                <i class="fas fa-exclamation-circle"></i>
+                                <p>問題の読み込みに失敗しました</p>
+                            </div>
+                        `;
+                    }
                 }
             }
 
             renderProblems(problems = this.problems) {
                 const container = document.getElementById('problems-container');
                 
-                if (problems.length === 0) {
+                if (!problems || problems.length === 0) {
                     container.innerHTML = `
                         <div class="text-center text-muted py-4">
                             <i class="fas fa-book-open fa-2x mb-2"></i>
@@ -776,8 +707,10 @@
             getSubjectName(subject) {
                 const subjects = {
                     'math': '数学',
-                    'english': '物理',
-                    'science': '化学',
+                    'physics': '物理',
+                    'chemistry': '化学',
+                    'english': '英語',
+                    'japanese': '国語',
                     'general': 'その他'
                 };
                 return subjects[subject] || 'その他';
@@ -785,26 +718,30 @@
 
             async showProblemDetail(id) {
                 try {
-                    // Find problem in current problems array
-                    const problem = this.problems.find(p => p.id === id);
-                    if (!problem) {
-                        throw new Error('Problem not found');
-                    }
-
-                    this.currentProblem = problem;
-
-                    // Update view count
-                    problem.views++;
+                    const data = await this.d1Client.getProblemById(id);
+                    if (!data) throw new Error('Problem not found');
+                    this.currentProblem = {
+                        id: data.id,
+                        subject: data.subject || 'general',
+                        title: data.title || '(無題)',
+                        content: data.content || '',
+                        difficulty: parseInt(data.difficulty || 1, 10),
+                        author: data.author || 'unknown',
+                        createdAt: data.created_at || ''
+                    };
 
                     // Render problem detail
-                    this.renderProblemDetail(problem);
+                    this.renderProblemDetail(this.currentProblem);
 
                     // Load comments
                     await this.loadComments(id);
 
                     // Switch to problem view
-                    document.getElementById('home-view').style.display = 'none';
+                    document.getElementById('home-view').style.display = 'block'; // keep layout stable
                     document.getElementById('problem-view').style.display = 'block';
+
+                    // Scroll to detail
+                    document.getElementById('problem-view').scrollIntoView({ behavior: 'smooth' });
 
                 } catch (error) {
                     console.error('Failed to load problem:', error);
@@ -833,11 +770,7 @@
                         <div class="card-body">
                             <h4 class="card-title">${problem.title}</h4>
                             <div class="problem-content mt-3">
-                                ${problem.content ? problem.content.replace(/\n/g, '<br>') : '問題内容を読み込み中...'}
-                            </div>
-                            <div class="problem-stats mt-3 text-muted small">
-                                <span><i class="fas fa-eye"></i> ${problem.views} 閲覧</span>
-                                <span class="ms-3"><i class="fas fa-check"></i> ${problem.solved} 解答済み</span>
+                                ${problem.content.replace(/\n/g, '<br>')}
                             </div>
                         </div>
                     </div>
@@ -849,34 +782,26 @@
                     const container = document.getElementById('comments-list');
                     container.innerHTML = '<div class="text-center text-muted"><i class="fas fa-spinner fa-spin"></i> 読み込み中...</div>';
 
-                    // Mock comments for now
-                    const mockComments = [
-                        {
-                            id: 1,
-                            author: 'student_a',
-                            content: 'この問題の解き方がよく分からないです。ヒントをもらえませんか？',
-                            createdAt: '1時間前'
-                        },
-                        {
-                            id: 2,
-                            author: 'math_teacher',
-                            content: 'まず公式を整理してから、段階的に解いてみましょう。',
-                            createdAt: '30分前'
-                        }
-                    ];
+                    const res = await this.d1Client.getCommentsByProblem(problemId);
+                    const comments = res || [];
 
-                    if (mockComments.length === 0) {
+                    if (comments.length === 0) {
                         container.innerHTML = '<div class="text-center text-muted">まだコメントがありません</div>';
                         return;
                     }
 
-                    container.innerHTML = mockComments.map(comment => `
+                    container.innerHTML = comments.map(comment => `
                         <div class="comment-item border-bottom pb-3 mb-3">
                             <div class="d-flex justify-content-between align-items-start mb-2">
-                                <strong><i class="fas fa-user"></i> ${comment.author}</strong>
-                                <small class="text-muted">${comment.createdAt}</small>
+                                <strong><i class="fas fa-user"></i> ${comment.author_name || comment.author || '匿名'}</strong>
+                                <small class="text-muted">${comment.created_at || ''}</small>
                             </div>
-                            <div class="comment-content">${comment.content}</div>
+                            <div class="comment-content">${(comment.content || '').replace(/\n/g, '<br>')}</div>
+                            <div class="mt-2 small text-muted d-flex align-items-center gap-3">
+                                <span><i class="fas fa-thumbs-up"></i> ${comment.likes || 0}</span>
+                                <button class="btn btn-link btn-sm p-0" onclick="likeComment('${comment.id}')">いいね</button>
+                                ${this.canDeleteComment(comment) ? `<button class="btn btn-link btn-sm text-danger p-0" onclick="deleteComment('${comment.id}')">削除</button>` : ''}
+                            </div>
                         </div>
                     `).join('');
 
@@ -885,6 +810,13 @@
                     document.getElementById('comments-list').innerHTML =
                         '<div class="text-center text-danger">コメントの読み込みに失敗しました</div>';
                 }
+            }
+
+            canDeleteComment(comment) {
+                const user = this.authClient.getCurrentUser();
+                if (!user) return false;
+                const uid = user.userId || user.id;
+                return comment.user_id === uid;
             }
 
             renderStars(difficulty) {
@@ -896,49 +828,13 @@
             }
 
             async logout() {
-                console.log('Logout started...');
                 try {
                     await this.authClient.logout();
-                    console.log('Auth client logout completed');
-
-                    // 強制的にローカルデータをクリア
-                    localStorage.removeItem('sessionToken');
-                    localStorage.removeItem('currentUser');
-                    localStorage.removeItem('webauthn_challenge');
-                    localStorage.removeItem('webauthn_credential');
-                    sessionStorage.clear();
-
-                    this.authClient.sessionToken = null;
-                    this.authClient.currentUser = null;
-                    console.log('Local data cleared');
-
-                    // プロフィールページからのリダイレクト
-                    if (window.location.pathname.includes('profile.html')) {
-                        console.log('Redirecting from profile page to home');
-                        window.location.href = 'index.html';
-                        return;
-                    }
-
-                    // UIを即座に更新
                     await this.updateAuthStatus();
                     await this.loadProblems();
-                    console.log('UI updated');
                 } catch (error) {
                     console.error('Logout error:', error);
-                    // エラーが発生してもローカルデータをクリア
-                    localStorage.clear();
-                    sessionStorage.clear();
                     window.location.reload();
-                }
-            }
-
-            async demoLogin() {
-                try {
-                    await this.authClient.demoLogin();
-                    window.location.reload();
-                } catch (error) {
-                    console.error('Demo login failed:', error);
-                    alert('デモログインに失敗しました');
                 }
             }
         }
@@ -957,183 +853,160 @@
         async function createProblem() {
             const form = document.getElementById('create-form');
 
-            // Validate form
             if (!form.checkValidity()) {
                 form.reportValidity();
                 return;
             }
 
-            // Get form data
             const subject = document.getElementById('subject').value;
-            const title = document.getElementById('title').value;
-            const content = document.getElementById('content').value;
-            const difficulty = parseInt(document.getElementById('difficulty').value);
+            const title = document.getElementById('title').value.trim();
+            const content = document.getElementById('content').value.trim();
+            const difficulty = parseInt(document.getElementById('difficulty').value, 10);
 
-            // Create problem object
+            const user = window.authClient.getCurrentUser();
+            if (!user) {
+                alert('ログインが必要です');
+                return;
+            }
+
             const problem = {
-                subject: subject,
-                title: title,
-                content: content,
-                difficulty: difficulty,
-                author: app.authClient.getCurrentUser()?.displayName || 'Unknown',
-                createdAt: new Date().toISOString(),
-                views: 0,
-                solved: 0
+                subject,
+                title,
+                content,
+                difficulty,
+                author: user.displayName || user.userId || 'User'
             };
 
             try {
-                // Save to D1 database
-                const d1Client = window.questaD1 || new QuestaD1Client();
-                const result = await d1Client.addProblem(problem);
+                const result = await window.questaD1.addProblem(problem);
 
                 if (result.success) {
-                    // Add to problems list for immediate display
-                    problem.id = result.id;
-                    app.problems.unshift(problem);
-                    app.renderProblems();
-
-                    // Close modal and reset form
                     bootstrap.Modal.getInstance(document.getElementById('createModal')).hide();
                     form.reset();
-
+                    await window.app.loadProblems();
                     alert('問題を投稿しました！');
                 } else {
-                    throw new Error(result.error || 'Database save failed');
+                    throw new Error(result.error || 'failed');
                 }
             } catch (error) {
-                console.error('Failed to create problem:', error);
-                alert('問題の投稿に失敗しました: ' + error.message);
+                console.error('Failed to add problem:', error);
+                alert('問題の投稿に失敗しました');
             }
         }
 
-        function viewProblem(id) {
-            app.showProblemDetail(id);
-        }
-
-        function showAllProblems() {
-            // Create a simple overview page or redirect to a search page
-            const subjects = [
-                { name: '数学', path: 'math/', icon: 'fas fa-calculator' },
-                { name: '物理', path: 'physics/', icon: 'fas fa-atom' },
-                { name: '化学', path: 'chemistry/', icon: 'fas fa-flask' }
-            ];
-            
-            let message = '科目を選択してください:\n\n';
-            subjects.forEach((subject, index) => {
-                message += `${index + 1}. ${subject.name}\n`;
-            });
-            
-            const choice = prompt(message + '\n数字を入力してください (1-3):');
-            if (choice >= 1 && choice <= 3) {
-                window.location.href = subjects[choice - 1].path;
-            }
+        async function viewProblem(id) {
+            if (!window.app) return;
+            await window.app.showProblemDetail(id);
         }
 
         function showHome() {
-            document.getElementById('home-view').style.display = 'block';
-            document.getElementById('problem-view').style.display = 'none';
-            document.querySelectorAll('.bottom-nav-item').forEach(nav => nav.classList.remove('active'));
-            document.querySelector('.bottom-nav-item[onclick="showHome()"]').classList.add('active');
+            const home = document.getElementById('home-view');
+            const detail = document.getElementById('problem-view');
+            if (home && detail) {
+                home.style.display = 'block';
+                detail.style.display = 'none';
+            }
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        async function showAllProblems() {
+            if (!window.app) return;
+            await window.app.loadProblems(100, 0);
+            showHome();
         }
 
         function showSearch() {
-            // Navigate to integrated search and browse page
             window.location.href = 'browse.html';
         }
 
         function showProfile() {
-            if (!window.authClient || !window.authClient.isLoggedIn()) {
-                window.location.href = 'auth.html';
-                return;
-            }
-            window.location.href = 'profile.html';
-        }
-
-        async function submitAnswer() {
-            const content = document.getElementById('answer-content').value.trim();
-            if (!content) {
-                alert('解答を入力してください');
-                return;
-            }
-
-            if (!app.currentProblem) {
-                alert('問題が選択されていません');
-                return;
-            }
-
-            try {
-                // TODO: Save answer to D1 database
-                app.currentProblem.solved++;
-                alert('解答を投稿しました！');
-                document.getElementById('answer-content').value = '';
-
-                // Re-render problem detail to update stats
-                app.renderProblemDetail(app.currentProblem);
-
-            } catch (error) {
-                console.error('Failed to submit answer:', error);
-                alert('解答の投稿に失敗しました');
-            }
+            const isLoggedIn = window.authClient.isLoggedIn();
+            window.location.href = isLoggedIn ? 'profile.html' : 'auth.html';
         }
 
         async function submitComment() {
-            const content = document.getElementById('comment-content').value.trim();
+            const contentEl = document.getElementById('comment-content');
+            const content = contentEl.value.trim();
             if (!content) {
                 alert('コメントを入力してください');
                 return;
             }
-
-            if (!app.currentProblem) {
+            if (!window.app?.currentProblem) {
                 alert('問題が選択されていません');
                 return;
             }
-
+            if (!window.authClient.isLoggedIn()) {
+                alert('コメントにはログインが必要です');
+                return;
+            }
             try {
-                // TODO: Save comment to D1 database
-                alert('コメントを投稿しました！');
-                document.getElementById('comment-content').value = '';
-
-                // Reload comments
-                await app.loadComments(app.currentProblem.id);
-
-            } catch (error) {
-                console.error('Failed to submit comment:', error);
+                await window.questaD1.addComment({
+                    problem_id: window.app.currentProblem.id,
+                    content
+                });
+                contentEl.value = '';
+                await window.app.loadComments(window.app.currentProblem.id);
+            } catch (e) {
+                console.error(e);
                 alert('コメントの投稿に失敗しました');
             }
         }
 
-        // Initialize app
-        let app;
-        document.addEventListener('DOMContentLoaded', () => {
-            app = new MobileProblemApp();
-
-            // localStorage変更の監視（他のタブからのログアウトを検知）
-            window.addEventListener('storage', (e) => {
-                if (e.key === 'sessionToken' && !e.newValue) {
-                    console.log('Session token removed in another tab, updating UI');
-                    app.authClient.sessionToken = null;
-                    app.authClient.currentUser = null;
-                    app.updateAuthStatus();
-                }
-                if (e.key === 'currentUser' && !e.newValue) {
-                    console.log('Current user removed in another tab, updating UI');
-                    app.authClient.currentUser = null;
-                    app.updateAuthStatus();
-                }
-            });
-
-            // Register service worker for PWA
-            if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.register('/sw.js')
-                    .then(registration => {
-                        console.log('SW registered:', registration);
-                    })
-                    .catch(error => {
-                        console.log('SW registration failed:', error);
-                    });
+        async function likeComment(commentId) {
+            if (!window.authClient.isLoggedIn()) {
+                alert('ログインが必要です');
+                return;
             }
+            try {
+                await window.questaD1.toggleCommentLike(commentId);
+                if (window.app?.currentProblem) {
+                    await window.app.loadComments(window.app.currentProblem.id);
+                }
+            } catch (e) {
+                console.error(e);
+                alert('いいねに失敗しました');
+            }
+        }
+
+        async function deleteComment(commentId) {
+            if (!window.authClient.isLoggedIn()) {
+                alert('ログインが必要です');
+                return;
+            }
+            if (!confirm('コメントを削除しますか？')) return;
+            try {
+                await window.questaD1.deleteComment(commentId);
+                if (window.app?.currentProblem) {
+                    await window.app.loadComments(window.app.currentProblem.id);
+                }
+            } catch (e) {
+                console.error(e);
+                alert('コメントの削除に失敗しました');
+            }
+        }
+
+        async function submitAnswer() {
+            const content = document.getElementById('answer-content').value.trim();
+            if (!content) { alert('解答を入力してください'); return; }
+            if (!window.app?.currentProblem) { alert('問題が選択されていません'); return; }
+            if (!window.authClient.isLoggedIn()) { alert('ログインが必要です'); return; }
+            try {
+                await window.questaD1.addAnswer({
+                    problem_id: window.app.currentProblem.id,
+                    content
+                });
+                document.getElementById('answer-content').value = '';
+                alert('解答を投稿しました');
+            } catch (e) {
+                console.error(e);
+                alert('解答の投稿に失敗しました');
+            }
+        }
+
+        // App boot
+        document.addEventListener('DOMContentLoaded', () => {
+            window.app = new MobileProblemApp();
         });
     </script>
-<script src="assets/js/index-recent-problems-fix.js"></script>
 </body>
 </html>
