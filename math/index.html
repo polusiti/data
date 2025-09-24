@@ -198,6 +198,12 @@
             -webkit-tap-highlight-color: transparent;
             touch-action: manipulation;
             position: relative;
+            -webkit-touch-callout: none;
+            -webkit-user-drag: none;
+            -khtml-user-drag: none;
+            -moz-user-drag: none;
+            -o-user-drag: none;
+            user-drag: none;
         }
 
         .latex-btn:active {
@@ -319,6 +325,13 @@
             font-size: 0.8rem;
             transition: all 0.2s;
             font-family: 'Noto Sans JP', 'Courier New', Consolas, monospace;
+            -webkit-touch-callout: none;
+            -webkit-user-drag: none;
+            -khtml-user-drag: none;
+            -moz-user-drag: none;
+            -o-user-drag: none;
+            user-drag: none;
+            touch-action: manipulation;
         }
 
         .sample-chip:hover {
@@ -1099,17 +1112,31 @@ x^2 + 2x + 1 = 0
             // 超シンプル・確実なLaTeXボタンシステム
             setupLatexButtons() {
                 document.querySelectorAll('.latex-btn').forEach(btn => {
+                    let touchStartTime = 0;
+                    let touchStartY = 0;
+
                     btn.addEventListener('touchstart', (e) => {
-                        // スクロール中はタップを無効化
-                        if (this.isScrolling) {
+                        const touch = e.touches[0];
+                        touchStartTime = Date.now();
+                        touchStartY = touch.clientY;
+                        btn.dataset.wasTapped = 'true';
+                    }, { passive: true });
+
+                    btn.addEventListener('touchend', (e) => {
+                        const touch = e.changedTouches[0];
+                        const touchEndTime = Date.now();
+                        const touchDuration = touchEndTime - touchStartTime;
+                        const touchDistance = Math.abs(touch.clientY - touchStartY);
+
+                        // 短時間（300ms未満）かつ短距離（20px未満）のタッチのみ有効
+                        if (touchDuration < 300 && touchDistance < 20 && !this.isScrolling) {
+                            e.preventDefault();
+                            this.insertLatex(btn.dataset.latex);
+                            this.showButtonFeedback(btn);
+                        } else {
                             e.preventDefault();
                             e.stopPropagation();
-                            return;
                         }
-
-                        e.preventDefault();
-                        this.insertLatex(btn.dataset.latex);
-                        this.showButtonFeedback(btn);
                     }, { passive: false });
 
                     btn.addEventListener('click', (e) => {
@@ -1217,6 +1244,48 @@ x^2 + 2x + 1 = 0
             // サンプル数式チップ
             setupSampleChips() {
                 document.querySelectorAll('.sample-chip').forEach(chip => {
+                    let touchStartTime = 0;
+                    let touchStartY = 0;
+
+                    chip.addEventListener('touchstart', (e) => {
+                        const touch = e.touches[0];
+                        touchStartTime = Date.now();
+                        touchStartY = touch.clientY;
+                        chip.dataset.wasTapped = 'true';
+                    }, { passive: true });
+
+                    chip.addEventListener('touchend', (e) => {
+                        const touch = e.changedTouches[0];
+                        const touchEndTime = Date.now();
+                        const touchDuration = touchEndTime - touchStartTime;
+                        const touchDistance = Math.abs(touch.clientY - touchStartY);
+
+                        // 短時間（300ms未満）かつ短距離（20px未満）のタッチのみ有効
+                        if (touchDuration < 300 && touchDistance < 20 && !this.isScrolling) {
+                            e.preventDefault();
+                            e.stopPropagation();
+
+                            const sample = chip.dataset.sample;
+                            const currentValue = this.textarea.value;
+
+                            // 現在の内容をクリアせずに追加
+                            if (currentValue.trim()) {
+                                // 既に内容がある場合は改行して追加
+                                this.textarea.value = currentValue + '\n' + sample;
+                            } else {
+                                // 空の場合はそのまま追加
+                                this.textarea.value = sample;
+                            }
+
+                            this.textarea.focus();
+                            this.updatePreview();
+                            this.addStatus(`サンプル挿入: ${chip.textContent}`, 'success');
+                        } else {
+                            e.preventDefault();
+                            e.stopPropagation();
+                        }
+                    }, { passive: false });
+
                     chip.addEventListener('click', (e) => {
                         // スクロール中はタップを無効化
                         if (this.isScrolling) {
@@ -1240,15 +1309,6 @@ x^2 + 2x + 1 = 0
                         this.textarea.focus();
                         this.updatePreview();
                         this.addStatus(`サンプル挿入: ${chip.textContent}`, 'success');
-                    });
-
-                    // タッチデバイス用の処理
-                    chip.addEventListener('touchend', (e) => {
-                        // スクロール中はタップを無効化
-                        if (this.isScrolling) {
-                            e.preventDefault();
-                            e.stopPropagation();
-                        }
                     });
                 });
             }
@@ -1504,60 +1564,125 @@ x^2 + 2x + 1 = 0
                 const toolbars = document.querySelectorAll('.latex-toolbar, .tools-section');
 
                 toolbars.forEach(toolbar => {
-                    let scrollStartY = 0;
-                    let isDragging = false;
+                    let touchStartY = 0;
+                    let touchStartTime = 0;
+                    let lastTouchY = 0;
+                    let isScrolling = false;
+                    let scrollVelocity = 0;
+                    let lastTouchTime = 0;
 
-                    // スクロール開始
+                    // タッチ開始
                     toolbar.addEventListener('touchstart', (e) => {
-                        scrollStartY = e.touches[0].clientY;
-                        isDragging = false;
+                        const touch = e.touches[0];
+                        touchStartY = touch.clientY;
+                        lastTouchY = touch.clientY;
+                        touchStartTime = Date.now();
+                        lastTouchTime = Date.now();
+                        isScrolling = false;
+                        scrollVelocity = 0;
+
+                        // すべてのボタンを即座に有効化
+                        const buttons = toolbar.querySelectorAll('.latex-btn, .sample-chip');
+                        buttons.forEach(btn => {
+                            btn.style.pointerEvents = 'auto';
+                            btn.style.opacity = '1';
+                            btn.dataset.wasTapped = 'false';
+                        });
                     }, { passive: true });
 
-                    // スクロール中
+                    // タッチ移動
                     toolbar.addEventListener('touchmove', (e) => {
-                        const currentY = e.touches[0].clientY;
-                        const deltaY = Math.abs(currentY - scrollStartY);
+                        const touch = e.touches[0];
+                        const currentY = touch.clientY;
+                        const currentTime = Date.now();
+                        const deltaTime = currentTime - lastTouchTime;
+                        const deltaY = currentY - lastTouchY;
 
-                        // 10px以上移動したらスクロールと判定
-                        if (deltaY > 10) {
-                            isDragging = true;
-                            this.isScrolling = true;
+                        // スクロール速度を計算
+                        if (deltaTime > 0) {
+                            scrollVelocity = Math.abs(deltaY) / deltaTime;
+                        }
 
-                            // スクロール中はボタンを無効化
+                        const totalDeltaY = Math.abs(currentY - touchStartY);
+                        const timeDelta = currentTime - touchStartTime;
+
+                        // 5px以上移動かつ時間が100ms未満でスクロール判定
+                        if (totalDeltaY > 5 && timeDelta < 100) {
+                            isScrolling = true;
+                        }
+
+                        // スクロール中または高速移動中はボタンを無効化
+                        if (isScrolling || scrollVelocity > 0.5) {
                             const buttons = toolbar.querySelectorAll('.latex-btn, .sample-chip');
                             buttons.forEach(btn => {
-                                btn.style.pointerEvents = 'none';
-                                btn.style.opacity = '0.7';
+                                if (btn.dataset.wasTapped !== 'true') {
+                                    btn.style.pointerEvents = 'none';
+                                    btn.style.opacity = '0.5';
+                                }
                             });
 
-                            // スクロール終了タイマー
+                            // スクロール状態をクリアするタイマー
                             clearTimeout(this.scrollTimeout);
                             this.scrollTimeout = setTimeout(() => {
-                                this.isScrolling = false;
+                                isScrolling = false;
+                                scrollVelocity = 0;
                                 buttons.forEach(btn => {
                                     btn.style.pointerEvents = 'auto';
                                     btn.style.opacity = '1';
+                                    delete btn.dataset.wasTapped;
                                 });
-                            }, 150);
+                            }, 200);
                         }
+
+                        lastTouchY = currentY;
+                        lastTouchTime = currentTime;
                     }, { passive: true });
 
                     // タッチ終了
-                    toolbar.addEventListener('touchend', () => {
-                        if (isDragging) {
-                            // スクロール中のタップは無効化
+                    toolbar.addEventListener('touchend', (e) => {
+                        const touch = e.changedTouches[0];
+                        const totalDeltaY = Math.abs(touch.clientY - touchStartY);
+                        const timeDelta = Date.now() - touchStartTime;
+
+                        // 短時間での大きな移動はスクロールと判定
+                        if (totalDeltaY > 15 && timeDelta < 200) {
+                            isScrolling = true;
+
+                            // スクロール終了後にボタンを再有効化
                             clearTimeout(this.scrollTimeout);
                             this.scrollTimeout = setTimeout(() => {
-                                this.isScrolling = false;
+                                isScrolling = false;
                                 const buttons = toolbar.querySelectorAll('.latex-btn, .sample-chip');
                                 buttons.forEach(btn => {
                                     btn.style.pointerEvents = 'auto';
                                     btn.style.opacity = '1';
+                                    delete btn.dataset.wasTapped;
                                 });
-                            }, 100);
+                            }, 300);
                         }
                     });
+
+                    // タッチキャンセル
+                    toolbar.addEventListener('touchcancel', () => {
+                        clearTimeout(this.scrollTimeout);
+                        const buttons = toolbar.querySelectorAll('.latex-btn, .sample-chip');
+                        buttons.forEach(btn => {
+                            btn.style.pointerEvents = 'auto';
+                            btn.style.opacity = '1';
+                            delete btn.dataset.wasTapped;
+                        });
+                    });
                 });
+
+                // 全体のスクロール検知
+                let scrollTimer;
+                window.addEventListener('scroll', () => {
+                    this.isScrolling = true;
+                    clearTimeout(scrollTimer);
+                    scrollTimer = setTimeout(() => {
+                        this.isScrolling = false;
+                    }, 150);
+                }, { passive: true });
             }
 
             showMessage(text, type) {
