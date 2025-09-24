@@ -170,11 +170,14 @@
             padding: 10px;
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
-            gap: 4px;
+            gap: 6px;
             max-height: 180px;
             overflow-y: auto;
             -webkit-overflow-scrolling: touch;
             scroll-behavior: smooth;
+            overscroll-behavior: contain;
+            touch-action: pan-y;
+            scroll-padding: 4px;
         }
 
         .latex-btn {
@@ -194,6 +197,12 @@
             -webkit-touch-callout: none;
             -webkit-tap-highlight-color: transparent;
             touch-action: manipulation;
+            position: relative;
+        }
+
+        .latex-btn:active {
+            transform: scale(0.95);
+            transition: transform 0.1s;
         }
 
         .latex-btn:hover {
@@ -441,13 +450,16 @@
 
             .latex-toolbar {
                 grid-template-columns: repeat(auto-fit, minmax(85px, 1fr));
-                gap: 8px;
+                gap: 10px;
                 padding: 15px;
                 max-height: 200px;
                 overflow-y: scroll;
                 -webkit-overflow-scrolling: touch;
                 scroll-behavior: smooth;
                 overscroll-behavior: contain;
+                touch-action: pan-y;
+                scroll-snap-type: y mandatory;
+                scroll-padding: 6px;
             }
 
             .latex-btn {
@@ -493,12 +505,15 @@
 
             .latex-toolbar {
                 grid-template-columns: repeat(auto-fit, minmax(60px, 1fr));
-                gap: 10px;
+                gap: 12px;
                 padding: 15px;
                 overflow-y: scroll;
                 -webkit-overflow-scrolling: touch;
                 scroll-behavior: smooth;
                 overscroll-behavior: contain;
+                touch-action: pan-y;
+                scroll-snap-type: y mandatory;
+                scroll-padding: 6px;
             }
 
             .latex-btn {
@@ -548,13 +563,15 @@
 
             .latex-toolbar {
                 grid-template-columns: repeat(auto-fit, minmax(65px, 1fr));
-                gap: 12px;
+                gap: 14px;
                 padding: 20px 15px;
                 overflow-y: scroll;
                 -webkit-overflow-scrolling: touch;
                 scroll-behavior: smooth;
                 overscroll-behavior: contain;
-                scroll-snap-type: y proximity;
+                touch-action: pan-y;
+                scroll-snap-type: y mandatory;
+                scroll-padding: 8px;
             }
 
             .latex-btn {
@@ -936,7 +953,7 @@ x^2 + 2x + 1 = 0
                             <option value="linear">線形代数</option>
                         </select>
                     </div>
-                    <button class="save-button" id="saveButton"><span class="material-symbols-outlined">save</span> D1に保存</button>
+                    <button class="save-button" id="saveButton"><span class="material-symbols-outlined">save</span> 問題を保存</button>
                     <div id="saveMessage"></div>
                 </div>
             </div>
@@ -1031,7 +1048,7 @@ x^2 + 2x + 1 = 0
                     <!-- 状態表示 -->
                     <div class="status-area" id="statusArea">
                         <div class="status-message success">
-                            KaTeX レンダリングエンジン準備完了
+                            KaTeX準備完了
                         </div>
                     </div>
                 </div>
@@ -1050,6 +1067,8 @@ x^2 + 2x + 1 = 0
                 this.preview = document.getElementById('mathPreview');
                 this.normalizedOutput = document.getElementById('normalizedOutput');
                 this.statusArea = document.getElementById('statusArea');
+                this.isScrolling = false;
+                this.scrollTimeout = null;
                 this.currentMode = 'algebra';
                 this.init();
             }
@@ -1060,6 +1079,7 @@ x^2 + 2x + 1 = 0
                 this.setupSampleChips();
                 this.setupRealtimePreview();
                 this.setupSaveSystem();
+                this.setupScrollDetection();
                 this.waitForKaTeX();
             }
 
@@ -1067,7 +1087,7 @@ x^2 + 2x + 1 = 0
             waitForKaTeX() {
                 const checkKaTeX = () => {
                     if (window.katex) {
-                        this.addStatus('KaTeX レンダリングエンジン準備完了', 'success');
+                        this.addStatus('KaTeX準備完了', 'success');
                         this.renderInitialMath();
                     } else {
                         setTimeout(checkKaTeX, 100);
@@ -1080,12 +1100,26 @@ x^2 + 2x + 1 = 0
             setupLatexButtons() {
                 document.querySelectorAll('.latex-btn').forEach(btn => {
                     btn.addEventListener('touchstart', (e) => {
+                        // スクロール中はタップを無効化
+                        if (this.isScrolling) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            return;
+                        }
+
                         e.preventDefault();
                         this.insertLatex(btn.dataset.latex);
                         this.showButtonFeedback(btn);
                     }, { passive: false });
-                    
+
                     btn.addEventListener('click', (e) => {
+                        // スクロール中はタップを無効化
+                        if (this.isScrolling) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            return;
+                        }
+
                         e.preventDefault();
                         this.insertLatex(btn.dataset.latex);
                         this.showButtonFeedback(btn);
@@ -1183,12 +1217,38 @@ x^2 + 2x + 1 = 0
             // サンプル数式チップ
             setupSampleChips() {
                 document.querySelectorAll('.sample-chip').forEach(chip => {
-                    chip.addEventListener('click', () => {
+                    chip.addEventListener('click', (e) => {
+                        // スクロール中はタップを無効化
+                        if (this.isScrolling) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            return;
+                        }
+
                         const sample = chip.dataset.sample;
-                        this.textarea.value = sample;
+                        const currentValue = this.textarea.value;
+
+                        // 現在の内容をクリアせずに追加
+                        if (currentValue.trim()) {
+                            // 既に内容がある場合は改行して追加
+                            this.textarea.value = currentValue + '\n' + sample;
+                        } else {
+                            // 空の場合はそのまま追加
+                            this.textarea.value = sample;
+                        }
+
                         this.textarea.focus();
                         this.updatePreview();
                         this.addStatus(`サンプル挿入: ${chip.textContent}`, 'success');
+                    });
+
+                    // タッチデバイス用の処理
+                    chip.addEventListener('touchend', (e) => {
+                        // スクロール中はタップを無効化
+                        if (this.isScrolling) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                        }
                     });
                 });
             }
@@ -1390,20 +1450,20 @@ x^2 + 2x + 1 = 0
                     // D1に保存を試みる
                     const d1Success = await this.saveToD1(question);
                     if (d1Success) {
-                        this.showMessage('問題をD1に保存しました！', 'success');
-                        this.addStatus('D1保存完了', 'success');
+                        this.showMessage('D1に保存しました！', 'success');
+                        this.addStatus('D1に保存', 'success');
                     } else {
                         // D1保存に失敗した場合はlocalStorageにフォールバック
                         this.saveToLocalStorage(question);
-                        this.showMessage('問題をローカルに保存しました', 'warning');
-                        this.addStatus('D1保存失敗、ローカルに保存', 'warning');
+                        this.showMessage('ローカルに保存しました', 'warning');
+                        this.addStatus('保存失敗、ローカルに保存', 'warning');
                     }
                 } catch (error) {
                     console.error('保存エラー:', error);
                     // エラー時もlocalStorageにフォールバック
                     this.saveToLocalStorage(question);
-                    this.showMessage('保存に失敗しましたが、ローカルには保存しました', 'error');
-                    this.addStatus('保存エラー、ローカルに保存', 'error');
+                    this.showMessage('保存エラー、ローカルに保存', 'error');
+                    this.addStatus('保存エラー', 'error');
                 }
 
                 this.clearForm();
@@ -1424,7 +1484,7 @@ x^2 + 2x + 1 = 0
                         const result = await response.json();
                         return result.success;
                     } else {
-                        throw new Error(`サーバーエラー: ${response.status}`);
+                        throw new Error(`サーバーエラー`);
                     }
                 } catch (error) {
                     console.error('D1保存エラー:', error);
@@ -1437,6 +1497,67 @@ x^2 + 2x + 1 = 0
                 const questions = JSON.parse(localStorage.getItem('katexMathQuestions') || '[]');
                 questions.push(question);
                 localStorage.setItem('katexMathQuestions', JSON.stringify(questions));
+            }
+
+            // スクロール検知メソッド
+            setupScrollDetection() {
+                const toolbars = document.querySelectorAll('.latex-toolbar, .tools-section');
+
+                toolbars.forEach(toolbar => {
+                    let scrollStartY = 0;
+                    let isDragging = false;
+
+                    // スクロール開始
+                    toolbar.addEventListener('touchstart', (e) => {
+                        scrollStartY = e.touches[0].clientY;
+                        isDragging = false;
+                    }, { passive: true });
+
+                    // スクロール中
+                    toolbar.addEventListener('touchmove', (e) => {
+                        const currentY = e.touches[0].clientY;
+                        const deltaY = Math.abs(currentY - scrollStartY);
+
+                        // 10px以上移動したらスクロールと判定
+                        if (deltaY > 10) {
+                            isDragging = true;
+                            this.isScrolling = true;
+
+                            // スクロール中はボタンを無効化
+                            const buttons = toolbar.querySelectorAll('.latex-btn, .sample-chip');
+                            buttons.forEach(btn => {
+                                btn.style.pointerEvents = 'none';
+                                btn.style.opacity = '0.7';
+                            });
+
+                            // スクロール終了タイマー
+                            clearTimeout(this.scrollTimeout);
+                            this.scrollTimeout = setTimeout(() => {
+                                this.isScrolling = false;
+                                buttons.forEach(btn => {
+                                    btn.style.pointerEvents = 'auto';
+                                    btn.style.opacity = '1';
+                                });
+                            }, 150);
+                        }
+                    }, { passive: true });
+
+                    // タッチ終了
+                    toolbar.addEventListener('touchend', () => {
+                        if (isDragging) {
+                            // スクロール中のタップは無効化
+                            clearTimeout(this.scrollTimeout);
+                            this.scrollTimeout = setTimeout(() => {
+                                this.isScrolling = false;
+                                const buttons = toolbar.querySelectorAll('.latex-btn, .sample-chip');
+                                buttons.forEach(btn => {
+                                    btn.style.pointerEvents = 'auto';
+                                    btn.style.opacity = '1';
+                                });
+                            }, 100);
+                        }
+                    });
+                });
             }
 
             showMessage(text, type) {
