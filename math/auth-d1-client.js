@@ -1,295 +1,261 @@
-// Enhanced Auth D1 Client for Questions API
-class AuthD1Client {
-    constructor(baseUrl = 'https://data-manager-auth.t88596565.workers.dev') {
-        this.baseUrl = baseUrl;
-        this.token = localStorage.getItem('auth_token');
-        this.currentUser = null;
-    }
+// D1 Integration for browse.html
+// Replace the existing loadAllProblems() function with this D1 version
 
-    // Authentication Methods
-    async login(email, password) {
-        try {
-            const response = await fetch(`${this.baseUrl}/api/auth/passkey/login/begin`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ email })
-            });
+async function loadAllProblems() {
+    showLoading('すべての問題を読み込み中...');
 
-            if (!response.ok) {
-                throw new Error('Login failed');
-            }
+    try {
+        // Try to load from D1 first
+        const allProblems = await loadProblemsFromD1();
 
-            const data = await response.json();
-            return data;
-        } catch (error) {
-            console.error('Login error:', error);
-            throw error;
-        }
-    }
+        if (allProblems && allProblems.length > 0) {
+            // Successfully loaded from D1
+            mathProblems = allProblems.filter(p => p.subject === 'math' || !p.subject);
+            physicsProblems = allProblems.filter(p => p.subject === 'physics');
+            chemistryProblems = allProblems.filter(p => p.subject === 'chemistry');
 
-    async register(userData) {
-        try {
-            const response = await fetch(`${this.baseUrl}/api/auth/register`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(userData)
-            });
-
-            if (!response.ok) {
-                throw new Error('Registration failed');
-            }
-
-            const data = await response.json();
-            return data;
-        } catch (error) {
-            console.error('Registration error:', error);
-            throw error;
-        }
-    }
-
-    async getCurrentUser() {
-        try {
-            const response = await fetch(`${this.baseUrl}/api/auth/me`, {
-                headers: {
-                    'Authorization': `Bearer ${this.token}`
-                }
-            });
-
-            if (!response.ok) {
-                return null;
-            }
-
-            const data = await response.json();
-            this.currentUser = data.user;
-            return data.user;
-        } catch (error) {
-            console.error('Get current user error:', error);
-            return null;
-        }
-    }
-
-    async logout() {
-        try {
-            await fetch(`${this.baseUrl}/api/auth/logout`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${this.token}`
-                }
-            });
-
-            this.token = null;
-            this.currentUser = null;
-            localStorage.removeItem('auth_token');
-        } catch (error) {
-            console.error('Logout error:', error);
-        }
-    }
-
-    // Questions API Methods
-    async getQuestions(filters = {}) {
-        try {
-            const url = new URL(`${this.baseUrl}/api/questions`);
-
-            if (filters.subject) {
-                url.searchParams.append('subject', filters.subject);
-            }
-            if (filters.field) {
-                url.searchParams.append('field', filters.field);
-            }
-            if (filters.limit) {
-                url.searchParams.append('limit', filters.limit);
-            }
-            if (filters.offset) {
-                url.searchParams.append('offset', filters.offset);
-            }
-
-            const response = await fetch(url.toString(), {
-                headers: this.token ? {
-                    'Authorization': `Bearer ${this.token}`
-                } : {}
-            });
-
-            if (!response.ok) {
-                throw new Error('Failed to fetch questions');
-            }
-
-            const data = await response.json();
-            return data;
-        } catch (error) {
-            console.error('Get questions error:', error);
-            throw error;
-        }
-    }
-
-    async createQuestion(questionData) {
-        try {
-            const response = await fetch(`${this.baseUrl}/api/questions`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    ...(this.token ? { 'Authorization': `Bearer ${this.token}` } : {})
-                },
-                body: JSON.stringify(questionData)
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || 'Failed to create question');
-            }
-
-            const data = await response.json();
-            return data;
-        } catch (error) {
-            console.error('Create question error:', error);
-            throw error;
-        }
-    }
-
-    async getQuestionById(questionId) {
-        try {
-            const response = await fetch(`${this.baseUrl}/api/questions/${questionId}`, {
-                headers: this.token ? {
-                    'Authorization': `Bearer ${this.token}`
-                } : {}
-            });
-
-            if (!response.ok) {
-                throw new Error('Question not found');
-            }
-
-            const data = await response.json();
-            return data;
-        } catch (error) {
-            console.error('Get question by ID error:', error);
-            throw error;
-        }
-    }
-
-    async updateQuestion(questionId, updateData) {
-        try {
-            const response = await fetch(`${this.baseUrl}/api/questions/${questionId}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${this.token}`
-                },
-                body: JSON.stringify(updateData)
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || 'Failed to update question');
-            }
-
-            const data = await response.json();
-            return data;
-        } catch (error) {
-            console.error('Update question error:', error);
-            throw error;
-        }
-    }
-
-    async deleteQuestion(questionId) {
-        try {
-            const response = await fetch(`${this.baseUrl}/api/questions/${questionId}`, {
-                method: 'DELETE',
-                headers: {
-                    'Authorization': `Bearer ${this.token}`
-                }
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || 'Failed to delete question');
-            }
-
-            const data = await response.json();
-            return data;
-        } catch (error) {
-            console.error('Delete question error:', error);
-            throw error;
-        }
-    }
-
-    async healthCheck() {
-        try {
-            const response = await fetch(`${this.baseUrl}/api/health`);
-
-            if (!response.ok) {
-                return { success: false, error: 'Health check failed' };
-            }
-
-            const data = await response.json();
-            return data;
-        } catch (error) {
-            console.error('Health check error:', error);
-            return { success: false, error: error.message };
-        }
-    }
-
-    // Helper Methods
-    setToken(token) {
-        this.token = token;
-        localStorage.setItem('auth_token', token);
-    }
-
-    isAuthenticated() {
-        return !!this.token;
-    }
-
-    async ensureAuthenticated() {
-        if (!this.isAuthenticated()) {
-            throw new Error('Authentication required');
+            addStatus('✅ D1から問題を読み込みました', 'success');
+        } else {
+            // Fallback to localStorage
+            await loadProblemsFromLocalStorage();
+            addStatus('⚠️ D1から読み込めなかったため、ローカルから読み込みました', 'warning');
         }
 
-        // Verify token is still valid
-        try {
-            const user = await this.getCurrentUser();
-            if (!user) {
-                this.logout();
-                throw new Error('Session expired');
-            }
-            return user;
-        } catch (error) {
-            this.logout();
-            throw new Error('Authentication required');
+        // Combine all problems
+        allProblemsArray = [...mathProblems, ...physicsProblems, ...chemistryProblems];
+
+        // Update display
+        updateProblemDisplay();
+        updateStatistics();
+
+    } catch (error) {
+        console.error('問題の読み込みに失敗しました:', error);
+
+        // Fallback to localStorage on error
+        await loadProblemsFromLocalStorage();
+        addStatus('❌ エラーが発生したため、ローカルから読み込みました', 'error');
+
+        // Combine all problems
+        allProblemsArray = [...mathProblems, ...physicsProblems, ...chemistryProblems];
+
+        // Update display
+        updateProblemDisplay();
+        updateStatistics();
+    }
+
+    hideLoading();
+}
+
+async function loadProblemsFromD1() {
+    try {
+        const apiUrl = getComputedStyle(document.documentElement).getPropertyValue('--api-base-url').trim();
+        const response = await fetch(`${apiUrl}/api/questions`);
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
         }
+
+        const data = await response.json();
+
+        if (data.success && data.questions) {
+            // Transform D1 data to match existing format
+            return data.questions.map(q => ({
+                id: q.id,
+                title: q.title,
+                content: q.question_text,
+                field: q.field_code || 'general',
+                subject: q.subject || 'math',
+                normalized: q.normalized_content || '',
+                mode: q.answer_format || 'katex',
+                created: q.created_at,
+                updated: q.updated_at,
+                choices: q.choices ? JSON.parse(q.choices) : [],
+                correctAnswer: q.correct_answer,
+                explanation: q.explanation || '',
+                difficulty: q.difficulty_level || 'medium',
+                tags: q.tags ? JSON.parse(q.tags) : [],
+                mediaUrls: q.media_urls ? JSON.parse(q.media_urls) : []
+            }));
+        } else {
+            return [];
+        }
+    } catch (error) {
+        console.error('D1 loading error:', error);
+        throw error;
     }
 }
 
-// Legacy compatibility - global functions for backward compatibility
-let authClient = null;
+async function loadProblemsFromLocalStorage() {
+    // Fallback to original localStorage logic
+    mathProblems = JSON.parse(localStorage.getItem('mathQuestions') || '[]');
+    physicsProblems = JSON.parse(localStorage.getItem('physicsQuestions') || '[]');
+    chemistryProblems = JSON.parse(localStorage.getItem('chemistryQuestions') || '[]');
 
-function initializeAuthClient() {
-    if (!authClient) {
-        authClient = new AuthD1Client();
+    // Load created problems
+    const createdProblems = JSON.parse(localStorage.getItem('createdProblems') || '[]');
+
+    // Add created problems to respective subject arrays
+    createdProblems.forEach(problem => {
+        if (problem.subject === 'physics') {
+            physicsProblems.push(problem);
+        } else if (problem.subject === 'chemistry') {
+            chemistryProblems.push(problem);
+        } else {
+            mathProblems.push(problem);
+        }
+    });
+
+    // Add sample data if empty
+    if (mathProblems.length === 0 && physicsProblems.length === 0 && chemistryProblems.length === 0) {
+        addSampleData();
     }
-    return authClient;
 }
 
-// Legacy function names for compatibility
-async function saveQuestion(questionData) {
-    const client = initializeAuthClient();
-    return await client.createQuestion(questionData);
+// Update the saveProblem function to save to D1
+async function saveProblem(problem) {
+    try {
+        // Try to save to D1 first
+        const d1Success = await saveProblemToD1(problem);
+
+        if (d1Success) {
+            addStatus('✅ 問題をD1に保存しました', 'success');
+            return true;
+        } else {
+            // Fallback to localStorage
+            saveProblemToLocalStorage(problem);
+            addStatus('⚠️ D1に保存できなかったため、ローカルに保存しました', 'warning');
+            return false;
+        }
+    } catch (error) {
+        console.error('Problem save error:', error);
+
+        // Fallback to localStorage
+        saveProblemToLocalStorage(problem);
+        addStatus('❌ エラーが発生したため、ローカルに保存しました', 'error');
+        return false;
+    }
 }
 
-async function getQuestionsBySubject(subject) {
-    const client = initializeAuthClient();
-    return await client.getQuestions({ subject });
+async function saveProblemToD1(problem) {
+    try {
+        const apiUrl = getComputedStyle(document.documentElement).getPropertyValue('--api-base-url').trim();
+        const response = await fetch(`${apiUrl}/api/questions`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                id: problem.id,
+                subject: problem.subject || 'math',
+                title: problem.title,
+                question_text: problem.content,
+                field_code: problem.field,
+                normalized_content: problem.normalized,
+                mode: problem.mode,
+                created_at: problem.created || new Date().toISOString()
+            })
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            return data.success;
+        } else {
+            return false;
+        }
+    } catch (error) {
+        console.error('D1 save error:', error);
+        return false;
+    }
 }
 
-async function getQuestionById(questionId) {
-    const client = initializeAuthClient();
-    return await client.getQuestionById(questionId);
+function saveProblemToLocalStorage(problem) {
+    // Original localStorage logic
+    let problems;
+
+    if (problem.subject === 'physics') {
+        problems = JSON.parse(localStorage.getItem('physicsQuestions') || '[]');
+    } else if (problem.subject === 'chemistry') {
+        problems = JSON.parse(localStorage.getItem('chemistryQuestions') || '[]');
+    } else {
+        problems = JSON.parse(localStorage.getItem('mathQuestions') || '[]');
+    }
+
+    // Check if problem with same ID already exists
+    const existingIndex = problems.findIndex(p => p.id === problem.id);
+
+    if (existingIndex !== -1) {
+        // Update existing problem
+        problems[existingIndex] = problem;
+    } else {
+        // Add new problem
+        problems.push(problem);
+    }
+
+    // Save to localStorage
+    if (problem.subject === 'physics') {
+        localStorage.setItem('physicsQuestions', JSON.stringify(problems));
+    } else if (problem.subject === 'chemistry') {
+        localStorage.setItem('chemistryQuestions', JSON.stringify(problems));
+    } else {
+        localStorage.setItem('mathQuestions', JSON.stringify(problems));
+    }
 }
 
-// Export for ES modules
-export { AuthD1Client, initializeAuthClient, saveQuestion, getQuestionsBySubject, getQuestionById };
+// Add D1 health check
+async function checkD1Connection() {
+    try {
+        const apiUrl = getComputedStyle(document.documentElement).getPropertyValue('--api-base-url').trim();
+        const response = await fetch(`${apiUrl}/api/health`);
 
-// Global variable for script tag usage
-window.AuthD1Client = AuthD1Client;
-window.authClient = initializeAuthClient();
+        if (response.ok) {
+            const data = await response.json();
+            return data.success;
+        } else {
+            return false;
+        }
+    } catch (error) {
+        console.error('D1 health check error:', error);
+        return false;
+    }
+}
+
+// Update status display to show D1 connection
+function updateD1Status() {
+    checkD1Connection().then(connected => {
+        const statusElement = document.getElementById('d1-status');
+        if (statusElement) {
+            if (connected) {
+                statusElement.innerHTML = '<span class="text-green-600">✅ D1接続済み</span>';
+            } else {
+                statusElement.innerHTML = '<span class="text-red-600">❌ D1未接続</span>';
+            }
+        }
+    });
+}
+
+// Add refresh button to manually reload from D1
+function addRefreshButton() {
+    const toolbar = document.querySelector('.toolbar');
+    if (toolbar) {
+        const refreshButton = document.createElement('button');
+        refreshButton.className = 'btn btn-outline-primary';
+        refreshButton.innerHTML = '🔄 D1から再読み込み';
+        refreshButton.onclick = () => {
+            loadAllProblems();
+            updateD1Status();
+        };
+        toolbar.appendChild(refreshButton);
+    }
+}
+
+// Initialize D1 integration
+document.addEventListener('DOMContentLoaded', function() {
+    // Check D1 connection status
+    updateD1Status();
+
+    // Add refresh button
+    addRefreshButton();
+
+    // Update D1 status every 30 seconds
+    setInterval(updateD1Status, 30000);
+});
