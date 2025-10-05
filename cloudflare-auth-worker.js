@@ -208,6 +208,18 @@ export default {
                 return await this.getPublicMediaFile(mediaId, env, corsHeaders);
             }
 
+            // Problems endpoints
+            if (path === '/api/problems' && request.method === 'GET') {
+                return await this.getRecentProblems(request, env, corsHeaders);
+            }
+            if (path === '/api/problems' && request.method === 'POST') {
+                return await this.createProblem(request, env, corsHeaders);
+            }
+            if (path.startsWith('/api/problems/') && request.method === 'GET') {
+                const problemId = path.split('/').pop();
+                return await this.getProblemById(problemId, request, env, corsHeaders);
+            }
+
             // Search endpoints
             if (path === '/api/search/questions') {
                 return await this.searchQuestions(request, env, corsHeaders);
@@ -521,5 +533,164 @@ export default {
                 ...headers
             }
         });
+    },
+
+    // Problems API methods
+    async getRecentProblems(request, env, corsHeaders) {
+        try {
+            const url = new URL(request.url);
+            const limit = parseInt(url.searchParams.get('limit') || '10');
+            const offset = parseInt(url.searchParams.get('offset') || '0');
+
+            const query = `
+                SELECT q.id,
+                       q.subject,
+                       q.title,
+                       q.question_text as content,
+                       q.difficulty_level as difficulty,
+                       q.field_code,
+                       q.answer_format as answerFormat,
+                       q.choices,
+                       q.correct_answer as correctAnswer,
+                       q.explanation,
+                       q.estimated_time as estimatedTime,
+                       q.tags,
+                       q.created_at as createdAt,
+                       q.updated_at as updatedAt,
+                       COALESCE(v.views, 0) as views,
+                       0 as solved
+                FROM questions q
+                LEFT JOIN question_views v ON q.id = v.question_id
+                WHERE q.active = 'active'
+                ORDER BY q.created_at DESC
+                LIMIT ? OFFSET ?
+            `;
+
+            const results = await env.DB.prepare(query)
+                .bind(limit, offset)
+                .all();
+
+            // Parse JSON fields for each problem
+            const problems = (results.results || []).map(problem => ({
+                ...problem,
+                choices: problem.choices ? JSON.parse(problem.choices) : [],
+                tags: problem.tags ? JSON.parse(problem.tags) : [],
+                difficulty: parseInt(problem.difficulty || 1),
+                estimatedTime: parseInt(problem.estimatedTime || 5),
+                views: parseInt(problem.views || 0),
+                solved: parseInt(problem.solved || 0)
+            }));
+
+            return this.jsonResponse({
+                success: true,
+                problems: problems,
+                total: problems.length
+            }, 200, corsHeaders);
+
+        } catch (error) {
+            console.error('Error fetching recent problems:', error);
+            return this.jsonResponse({
+                success: false,
+                error: 'Failed to fetch problems'
+            }, 500, corsHeaders);
+        }
+    },
+
+    async createProblem(request, env, corsHeaders) {
+        try {
+            const problemData = await request.json();
+
+            // Validate required fields
+            if (!problemData.title || !problemData.content) {
+                return this.jsonResponse({
+                    success: false,
+                    error: 'Title and content are required'
+                }, 400, corsHeaders);
+            }
+
+            const problemId = `problem_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+            const query = `
+                INSERT INTO questions (
+                    id, subject, title, question_text, answer_format,
+                    difficulty_level, difficulty_amount, field_code,
+                    choices, correct_answer, explanation, estimated_time,
+                    tags, created_at, updated_at, active
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'), 'active')
+            `;
+
+            await env.DB.prepare(query).bind(
+                problemId,
+                problemData.subject || 'general',
+                problemData.title || '',
+                problemData.content || '',
+                problemData.answerFormat || 'text',
+                problemData.difficultyLevel || 'A',
+                problemData.difficultyAmount || 1,
+                problemData.fieldCode || '',
+                JSON.stringify(problemData.choices || []),
+                problemData.correctAnswer || 0,
+                problemData.explanation || '',
+                problemData.estimatedTime || 5,
+                JSON.stringify(problemData.tags || [])
+            ).run();
+
+            return this.jsonResponse({
+                success: true,
+                id: problemId,
+                message: 'Problem created successfully'
+            }, 201, corsHeaders);
+
+        } catch (error) {
+            console.error('Error creating problem:', error);
+            return this.jsonResponse({
+                success: false,
+                error: 'Failed to create problem'
+            }, 500, corsHeaders);
+        }
+    },
+
+    async getProblemById(problemId, request, env, corsHeaders) {
+        try {
+            const query = `
+                SELECT q.*,
+                       COALESCE(v.views, 0) as views,
+                       COALESCE(s.solved_count, 0) as solved
+                FROM questions q
+                LEFT JOIN question_views v ON q.id = v.question_id
+                LEFT JOIN problem_solved s ON q.id = s.problem_id
+                WHERE q.id = ? AND q.active = 'active'
+            `;
+
+            const result = await env.DB.prepare(query).bind(problemId).first();
+
+            if (!result) {
+                return this.jsonResponse({
+                    success: false,
+                    error: 'Problem not found'
+                }, 404, corsHeaders);
+            }
+
+            // Increment view count
+            await env.DB.prepare(`
+                INSERT INTO question_views (question_id, views, viewed_at)
+                VALUES (?, 1, datetime('now'))
+                ON CONFLICT(question_id) DO UPDATE SET
+                    views = views + 1,
+                    viewed_at = datetime('now')
+            `).bind(problemId).run();
+
+            return this.jsonResponse({
+                success: true,
+                problem: result
+            }, 200, corsHeaders);
+
+        } catch (error) {
+            console.error('Error fetching problem:', error);
+            return this.jsonResponse({
+                success: false,
+                error: 'Failed to fetch problem'
+            }, 500, corsHeaders);
+        }
     }
 };
