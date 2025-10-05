@@ -92,3 +92,32 @@ coverage/
 *.sln
 *.sw?
 .npm-global/
+
+# SECURITY - English-related content (PROHIBITED)
+*english*
+*English*
+*lesson*
+*Lesson*
+*learning*
+*Learning*
+vocab/
+grammar/
+ENGLISH.md
+english-data/
+sample-*.json
+test-data-*.json
+mock-data-*.json
+
+# SECURITY - Unauthorized access control
+*.key
+*.pem
+*.p12
+config.json
+secrets.json
+auth-tokens.json
+admin-keys/
+
+# SECURITY - Git hooks protection
+.git/hooks/*
+!.git/hooks/pre-commit.sample
+!.git/hooks/pre-push.sample
