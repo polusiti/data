@@ -85,13 +85,15 @@ export default {
             'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
             'Access-Control-Allow-Headers': 'Content-Type, Authorization',
             'Access-Control-Max-Age': '86400',
+            'Access-Control-Allow-Credentials': 'true'
         };
         
-        // Set CORS origin
+        // Set CORS origin (must be specific when credentials are enabled)
         if (origin && allowedOrigins.some(allowed => origin.startsWith(allowed))) {
             corsHeaders['Access-Control-Allow-Origin'] = origin;
         } else {
-            corsHeaders['Access-Control-Allow-Origin'] = '*'; // Fallback for testing
+            // For credentials, cannot use wildcard - must use specific origin
+            corsHeaders['Access-Control-Allow-Origin'] = 'https://data.allfrom0.top';
         }
 
         // Handle preflight requests

@@ -718,17 +718,28 @@
 
             async showProblemDetail(id) {
                 try {
+                    console.log('Loading problem detail for ID:', id);
                     const data = await this.d1Client.getProblemById(id);
+                    console.log('Received problem data:', data);
+
                     if (!data) throw new Error('Problem not found');
+
                     this.currentProblem = {
                         id: data.id,
                         subject: data.subject || 'general',
                         title: data.title || '(無題)',
-                        content: data.content || '',
-                        difficulty: parseInt(data.difficulty || 1, 10),
+                        content: data.question_text || data.content || '',  // API returns question_text
+                        difficulty: parseInt(data.difficulty_level || data.difficulty || 1, 10),
                         author: data.author || 'unknown',
-                        createdAt: data.created_at || ''
+                        createdAt: data.created_at || data.createdAt || '',
+                        choices: data.choices ? (Array.isArray(data.choices) ? data.choices : JSON.parse(data.choices || '[]')) : [],
+                        correctAnswer: data.correct_answer || data.correctAnswer,
+                        explanation: data.explanation || '',
+                        estimatedTime: data.estimated_time || data.estimatedTime || 5,
+                        answerFormat: data.answer_format || data.answerFormat || 'text'
                     };
+
+                    console.log('Processed currentProblem:', this.currentProblem);
 
                     // Render problem detail
                     this.renderProblemDetail(this.currentProblem);
@@ -895,7 +906,11 @@
         }
 
         async function viewProblem(id) {
-            if (!window.app) return;
+            console.log('viewProblem called with ID:', id);
+            if (!window.app) {
+                console.error('window.app is not defined');
+                return;
+            }
             await window.app.showProblemDetail(id);
         }
 
