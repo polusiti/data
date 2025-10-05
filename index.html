@@ -685,7 +685,7 @@
                 }
 
                 container.innerHTML = problems.map(problem => `
-                    <div class="problem-card" onclick="viewProblem(${problem.id})">
+                    <div class="problem-card" data-problem-id="${problem.id}">
                         <div class="problem-header">
                             <span class="problem-subject">${this.getSubjectName(problem.subject)}</span>
                             <div class="problem-difficulty ms-auto">
@@ -702,6 +702,17 @@
                         </div>
                     </div>
                 `).join('');
+
+                // Add click event listeners
+                container.querySelectorAll('.problem-card').forEach(card => {
+                    card.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        const problemId = card.getAttribute('data-problem-id');
+                        console.log('Card clicked, problemId:', problemId);
+                        viewProblem(problemId);
+                    });
+                });
             }
 
             getSubjectName(subject) {
