@@ -222,6 +222,19 @@ export default {
                 return await this.getProblemById(problemId, request, env, corsHeaders);
             }
 
+            // Comments endpoints
+            if (path.startsWith('/api/comments/problem/') && request.method === 'GET') {
+                const problemId = path.split('/').pop();
+                return await this.getCommentsByProblem(problemId, request, env, corsHeaders);
+            }
+            if (path === '/api/comments' && request.method === 'POST') {
+                return await this.createComment(request, env, corsHeaders);
+            }
+            if (path.startsWith('/api/comments/') && request.method === 'DELETE') {
+                const commentId = path.split('/').pop();
+                return await this.deleteComment(commentId, request, env, corsHeaders);
+            }
+
             // Search endpoints
             if (path === '/api/search/questions') {
                 return await this.searchQuestions(request, env, corsHeaders);
@@ -692,6 +705,122 @@ export default {
             return this.jsonResponse({
                 success: false,
                 error: 'Failed to fetch problem'
+            }, 500, corsHeaders);
+        }
+    },
+
+    // Comments API methods
+    async getCommentsByProblem(problemId, request, env, corsHeaders) {
+        try {
+            const url = new URL(request.url);
+            const limit = parseInt(url.searchParams.get('limit') || '50');
+            const offset = parseInt(url.searchParams.get('offset') || '0');
+
+            const query = `
+                SELECT c.id, c.problem_id, c.content, c.author_name, c.likes, c.created_at,
+                       u.displayName as author_display_name
+                FROM comments c
+                LEFT JOIN users u ON c.author_id = u.id
+                WHERE c.problem_id = ?
+                ORDER BY c.created_at ASC
+                LIMIT ? OFFSET ?
+            `;
+
+            const results = await env.DB.prepare(query)
+                .bind(problemId, limit, offset)
+                .all();
+
+            const comments = (results.results || []).map(comment => ({
+                id: comment.id,
+                problem_id: comment.problem_id,
+                content: comment.content,
+                author: comment.author_name || comment.author_display_name || '匿名',
+                likes: parseInt(comment.likes || 0),
+                created_at: comment.created_at
+            }));
+
+            return this.jsonResponse({
+                success: true,
+                comments: comments,
+                total: comments.length
+            }, 200, corsHeaders);
+
+        } catch (error) {
+            console.error('Error fetching comments:', error);
+            return this.jsonResponse({
+                success: false,
+                error: 'Failed to fetch comments'
+            }, 500, corsHeaders);
+        }
+    },
+
+    async createComment(request, env, corsHeaders) {
+        try {
+            const commentData = await request.json();
+
+            // Validate required fields
+            if (!commentData.problem_id || !commentData.content) {
+                return this.jsonResponse({
+                    success: false,
+                    error: 'Problem ID and content are required'
+                }, 400, corsHeaders);
+            }
+
+            const commentId = `comment_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+            const query = `
+                INSERT INTO comments (
+                    id, problem_id, author_id, author_name, content, likes, created_at
+                ) VALUES (?, ?, ?, ?, ?, ?, datetime('now'))
+            `;
+
+            await env.DB.prepare(query).bind(
+                commentId,
+                commentData.problem_id,
+                commentData.author_id || null,
+                commentData.author_name || '匿名',
+                commentData.content,
+                0
+            ).run();
+
+            return this.jsonResponse({
+                success: true,
+                id: commentId,
+                message: 'Comment created successfully'
+            }, 201, corsHeaders);
+
+        } catch (error) {
+            console.error('Error creating comment:', error);
+            return this.jsonResponse({
+                success: false,
+                error: 'Failed to create comment'
+            }, 500, corsHeaders);
+        }
+    },
+
+    async deleteComment(commentId, request, env, corsHeaders) {
+        try {
+            const result = await env.DB.prepare('DELETE FROM comments WHERE id = ?')
+                .bind(commentId)
+                .run();
+
+            if (result.changes === 0) {
+                return this.jsonResponse({
+                    success: false,
+                    error: 'Comment not found'
+                }, 404, corsHeaders);
+            }
+
+            return this.jsonResponse({
+                success: true,
+                message: 'Comment deleted successfully'
+            }, 200, corsHeaders);
+
+        } catch (error) {
+            console.error('Error deleting comment:', error);
+            return this.jsonResponse({
+                success: false,
+                error: 'Failed to delete comment'
             }, 500, corsHeaders);
         }
     }
