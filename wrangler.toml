@@ -1,4 +1,4 @@
-name = "data-manager-auth"
+name = "database1"
 main = "cloudflare-auth-worker.js"
 compatibility_date = "2024-01-15"
 account_id = "ba21c5b4812c8151fe16474a782a12d8"
