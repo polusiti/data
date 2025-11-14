@@ -11,7 +11,34 @@
 </head>
 
 <body>
-    <div class="notebook">
+    <!-- 認証画面 -->
+    <div id="auth-screen" style="display: none; min-height: 100vh; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+        <div style="background: white; padding: 3rem; border-radius: 16px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); max-width: 400px; width: 90%;">
+            <h2 style="text-align: center; color: #333; margin-bottom: 0.5rem;">🔧 Mana管理画面</h2>
+            <p style="text-align: center; color: #666; margin-bottom: 2rem; font-size: 14px;">管理者認証が必要です</p>
+
+            <div style="margin-bottom: 1.5rem;">
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #374151;">管理者ID</label>
+                <input type="text" id="auth-id" placeholder="管理者ID" value="P37600"
+                       style="width: 100%; padding: 0.75rem; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 1rem;">
+            </div>
+
+            <div style="margin-bottom: 1.5rem;">
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #374151;">パスワード</label>
+                <input type="password" id="auth-password" placeholder="パスワード"
+                       style="width: 100%; padding: 0.75rem; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 1rem;">
+            </div>
+
+            <button onclick="authenticate()" style="width: 100%; padding: 0.875rem; background: #667eea; color: white; border: none; border-radius: 8px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: all 0.2s;">
+                認証
+            </button>
+
+            <div id="auth-error" style="display: none; background: #fef2f2; color: #ef4444; padding: 0.75rem; border-radius: 8px; margin-top: 1rem; font-size: 0.9rem; border: 1px solid #fecaca;"></div>
+        </div>
+    </div>
+
+    <!-- メイン画面 -->
+    <div class="notebook" id="main-screen" style="display: none;">
         <div class="doodle-bg doodle-star">★</div>
         <div class="doodle-bg doodle-heart">♡</div>
         <div class="doodle-bg doodle-note">♪</div>
@@ -24,7 +51,10 @@
 
         <div class="container">
             <div class="subject-select">
-                <button class="back-btn" onclick="location.href='subject-select.html'">← 学習ノートに戻る</button>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                    <button class="back-btn" onclick="location.href='subject-select.html'">← 学習ノートに戻る</button>
+                    <button onclick="logout()" style="padding: 8px 16px; background: #ef4444; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px;">ログアウト</button>
+                </div>
 
                 <h1>問題管理</h1>
                 <p class="subtitle">科目を選んで問題を管理してください</p>
@@ -42,6 +72,62 @@
     </div>
 
     <script>
+        // 認証チェック
+        function checkAuth() {
+            const isAuthenticated = localStorage.getItem('mana_authenticated') === 'true';
+            if (isAuthenticated) {
+                document.getElementById('auth-screen').style.display = 'none';
+                document.getElementById('main-screen').style.display = 'block';
+                loadQuestionCounts();
+            } else {
+                document.getElementById('auth-screen').style.display = 'flex';
+                document.getElementById('main-screen').style.display = 'none';
+            }
+        }
+
+        // 認証処理
+        function authenticate() {
+            const id = document.getElementById('auth-id').value;
+            const password = document.getElementById('auth-password').value;
+            const errorElement = document.getElementById('auth-error');
+
+            // 認証情報
+            const validCredentials = [
+                { id: 'P37600', password: 'l710645' }
+            ];
+
+            const isValid = validCredentials.some(cred =>
+                cred.id === id && cred.password === password
+            );
+
+            if (isValid) {
+                localStorage.setItem('mana_authenticated', 'true');
+                errorElement.style.display = 'none';
+                checkAuth();
+            } else {
+                errorElement.textContent = 'IDまたはパスワードが間違っています';
+                errorElement.style.display = 'block';
+                document.getElementById('auth-password').value = '';
+            }
+        }
+
+        // ログアウト処理
+        function logout() {
+            localStorage.removeItem('mana_authenticated');
+            location.reload();
+        }
+
+        // Enterキーで認証
+        document.addEventListener('DOMContentLoaded', () => {
+            const passwordInput = document.getElementById('auth-password');
+            if (passwordInput) {
+                passwordInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') authenticate();
+                });
+            }
+            checkAuth();
+        });
+
         // API Base URL
         const API_BASE_URL = 'https://questa-r2-api.t88596565.workers.dev';
 
@@ -122,8 +208,7 @@
             document.getElementById('totalQuestions').textContent = totalCount;
         }
 
-        // ページ読み込み時に実行
-        document.addEventListener('DOMContentLoaded', loadQuestionCounts);
+        // ページ初期化時に認証チェック（loadQuestionCounts は checkAuth() 内で呼ばれる）
     </script>
 </body>
 </html>
