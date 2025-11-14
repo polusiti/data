@@ -1,0 +1,3 @@
+# Mana Dashboard
+/mana /mana.html 200
+/mana/* /mana.html 200
