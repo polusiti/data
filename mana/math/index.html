@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>数学問題管理 - 学習ノート</title>
+    <link href="https://fonts.googleapis.com/css2?family=Klee+One:wght@400;600&family=Zen+Kurenaido&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../../style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <style>
+        .question-list {
+            margin-top: 20px;
+        }
+        .question-item {
+            background: var(--card-bg);
+            padding: 20px;
+            margin-bottom: 15px;
+            border: 2px solid var(--card-border);
+            border-radius: 8px;
+            transform: rotate(-0.1deg);
+            box-shadow: 2px 2px 0px var(--shadow-color);
+        }
+        .question-item:nth-child(2n) {
+            transform: rotate(0.1deg);
+        }
+        .question-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .question-title {
+            font-weight: 600;
+            font-size: 16px;
+            color: var(--text-primary);
+        }
+        .question-actions {
+            display: flex;
+            gap: 10px;
+        }
+        .btn-small {
+            padding: 6px 12px;
+            font-size: 13px;
+            background: var(--button-bg);
+            border: 2px solid var(--button-border);
+            box-shadow: 2px 2px 0px var(--button-border);
+            cursor: pointer;
+            font-family: 'Klee One', cursive;
+            border-radius: 4px;
+            min-height: auto;
+        }
+        .btn-small:hover {
+            transform: translate(-1px, -1px);
+            box-shadow: 3px 3px 0px var(--button-border);
+        }
+        .btn-small:active {
+            transform: translate(1px, 1px);
+            box-shadow: 1px 1px 0px var(--button-border);
+        }
+        .btn-danger {
+            background: var(--error-bg);
+            border-color: var(--error-border);
+            box-shadow: 2px 2px 0px var(--error-border);
+        }
+        .btn-danger:hover {
+            box-shadow: 3px 3px 0px var(--error-border);
+        }
+        .btn-danger:active {
+            box-shadow: 1px 1px 0px var(--error-border);
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal.active {
+            display: flex;
+        }
+        .modal-content {
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: 8px;
+            max-width: 700px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            border: 3px solid var(--button-border);
+            box-shadow: 5px 5px 0px var(--button-border);
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--text-primary);
+        }
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid var(--button-border);
+            border-radius: 4px;
+            font-family: 'Klee One', cursive;
+            font-size: 14px;
+            background: var(--input-bg);
+            color: var(--text-primary);
+            box-sizing: border-box;
+        }
+        .form-group textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+        .formula-preview {
+            margin-top: 10px;
+            padding: 15px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 4px;
+            min-height: 40px;
+            font-size: 18px;
+        }
+        .katex-help {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 5px;
+        }
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        .modal-actions button {
+            flex: 1;
+            padding: 12px;
+            font-size: 15px;
+            min-height: auto;
+        }
+        .success-message {
+            background: #d4edda;
+            color: #155724;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+            border: 1px solid #c3e6cb;
+        }
+        .error-message {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+            border: 1px solid #f5c6cb;
+        }
+    </style>
+</head>
+<body>
+    <div class="notebook">
+        <div class="container">
+            <button class="back-btn" onclick="location.href='../index.html'">← 科目選択に戻る</button>
+
+            <h1>数学問題管理</h1>
+            <p class="subtitle">数学問題（KaTeX数式対応）</p>
+
+            <div class="stats">
+                <p class="stat">総問題数: <span id="totalCount">0</span></p>
+                <p class="stat">分野: <span id="categoryFilter">全て</span></p>
+            </div>
+
+            <div style="display: flex; gap: 10px; margin: 20px 0; flex-wrap: wrap;">
+                <button onclick="showCreateModal()" style="flex: 1; min-width: 150px;">新規作成</button>
+                <button onclick="loadContent()" style="flex: 1; min-width: 150px;" class="btn-small">再読込</button>
+            </div>
+
+            <div id="messageArea"></div>
+            <div id="questionList" class="question-list"></div>
+        </div>
+    </div>
+
+    <!-- 作成・編集モーダル -->
+    <div id="questionModal" class="modal">
+        <div class="modal-content">
+            <h3 id="modalTitle">数学問題を作成</h3>
+            <form id="questionForm" onsubmit="handleSubmit(event)">
+                <div class="form-group">
+                    <label>問題タイトル</label>
+                    <input type="text" id="inputTitle" required placeholder="例: 基本の足し算">
+                </div>
+                <div class="form-group">
+                    <label>問題文（KaTeX数式対応）</label>
+                    <textarea id="inputQuestion" required placeholder="例: $3 + 5 = ?$" oninput="updatePreview()"></textarea>
+                    <div class="katex-help">
+                        数式は $...$ で囲んでください（例: $x^2 + 2x + 1$）
+                    </div>
+                    <div class="formula-preview" id="questionPreview"></div>
+                </div>
+                <div class="form-group">
+                    <label>解答（KaTeX数式対応）</label>
+                    <input type="text" id="inputAnswer" required placeholder="例: $8$" oninput="updatePreview()">
+                    <div class="katex-help">
+                        解答も数式形式で（例: $\sqrt{16}$）
+                    </div>
+                    <div class="formula-preview" id="answerPreview"></div>
+                </div>
+                <div class="form-group">
+                    <label>解説（KaTeX数式対応・任意）</label>
+                    <textarea id="inputExplanation" placeholder="例: $3 + 5 = 8$ になります。" oninput="updatePreview()"></textarea>
+                    <div class="formula-preview" id="explanationPreview"></div>
+                </div>
+                <div class="form-group">
+                    <label>難易度</label>
+                    <select id="inputDifficulty" required>
+                        <option value="">選択してください</option>
+                        <option value="easy">簡単（中学）</option>
+                        <option value="medium">普通（高校）</option>
+                        <option value="hard">難しい（大学受験）</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>カテゴリ（任意）</label>
+                    <select id="inputCategory">
+                        <option value="">選択してください</option>
+                        <option value="algebra">代数</option>
+                        <option value="geometry">幾何</option>
+                        <option value="calculus">微積分</option>
+                        <option value="statistics">統計</option>
+                        <option value="probability">確率</option>
+                        <option value="other">その他</option>
+                    </select>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" onclick="closeModal('questionModal')" class="btn-danger">キャンセル</button>
+                    <button type="submit">保存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // API Base URL
+        const API_BASE_URL = 'https://questa-r2-api.t88596565.workers.dev';
+
+        let currentEditId = null;
+        const ADMIN_TOKEN = localStorage.getItem('questa_admin_token') || 'questa-admin-2024';
+
+        // ページ読み込み時に実行
+        document.addEventListener('DOMContentLoaded', () => {
+            loadContent();
+            if (typeof katex !== 'undefined') {
+                updatePreview();
+            }
+        });
+
+        // KaTeXプレビュー更新
+        function updatePreview() {
+            if (typeof katex === 'undefined') return;
+
+            const questionText = document.getElementById('inputQuestion').value;
+            const answerText = document.getElementById('inputAnswer').value;
+            const explanationText = document.getElementById('inputExplanation').value;
+
+            // 問題文プレビュー
+            const questionPreview = document.getElementById('questionPreview');
+            if (questionText.trim()) {
+                try {
+                    questionPreview.innerHTML = renderMathInText(questionText);
+                } catch (e) {
+                    questionPreview.innerHTML = questionText;
+                }
+            } else {
+                questionPreview.innerHTML = 'プレビューがここに表示されます';
+            }
+
+            // 解答プレビュー
+            const answerPreview = document.getElementById('answerPreview');
+            if (answerText.trim()) {
+                try {
+                    answerPreview.innerHTML = renderMathInText(answerText);
+                } catch (e) {
+                    answerPreview.innerHTML = answerText;
+                }
+            } else {
+                answerPreview.innerHTML = 'プレビューがここに表示されます';
+            }
+
+            // 解説プレビュー
+            const explanationPreview = document.getElementById('explanationPreview');
+            if (explanationText.trim()) {
+                try {
+                    explanationPreview.innerHTML = renderMathInText(explanationText);
+                } catch (e) {
+                    explanationPreview.innerHTML = explanationText;
+                }
+            } else {
+                explanationPreview.innerHTML = 'プレビューがここに表示されます';
+            }
+        }
+
+        // 数式レンダリング（study.jsと同じロジック）
+        function renderMathInText(text) {
+            if (typeof katex === 'undefined') return text;
+
+            let rendered = text.replace(/\$\$([^\$]+)\$\$/g, (match, formula) => {
+                try {
+                    let decoded = formula.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
+                    decoded = decoded.replace(/\\\\/g, '\\');
+                    return katex.renderToString(decoded, { displayMode: true, throwOnError: false });
+                } catch (e) {
+                    return match;
+                }
+            });
+
+            rendered = rendered.replace(/\$([^\$]+)\$/g, (match, formula) => {
+                try {
+                    let decoded = formula.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
+                    decoded = decoded.replace(/\\\\/g, '\\');
+                    return katex.renderToString(decoded, { displayMode: false, throwOnError: false });
+                } catch (e) {
+                    return match;
+                }
+            });
+
+            return rendered;
+        }
+
+        // コンテンツ読み込み
+        async function loadContent() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/note/questions?subject=math&limit=100`, {
+                    headers: {
+                        'Authorization': `Bearer ${ADMIN_TOKEN}`
+                    }
+                });
+
+                if (!response.ok) throw new Error('Failed to load questions');
+
+                const data = await response.json();
+                displayQuestions(data.questions || []);
+                document.getElementById('totalCount').textContent = data.questions?.length || 0;
+
+            } catch (error) {
+                showMessage('問題の読み込みに失敗しました: ' + error.message, 'error');
+                document.getElementById('questionList').innerHTML = '<p>読み込みエラー</p>';
+            }
+        }
+
+        // 問題一覧表示
+        function displayQuestions(questions) {
+            const container = document.getElementById('questionList');
+
+            if (questions.length === 0) {
+                container.innerHTML = '<p>問題がありません。新規作成ボタンから作成してください。</p>';
+                return;
+            }
+
+            container.innerHTML = questions.map(q => `
+                <div class="question-item" id="question-${q.id}">
+                    <div class="question-header">
+                        <div class="question-title">${q.title}</div>
+                        <div class="question-actions">
+                            <button class="btn-small" onclick="editQuestion('${q.id}')">編集</button>
+                            <button class="btn-small btn-danger" onclick="deleteQuestion('${q.id}')">削除</button>
+                        </div>
+                    </div>
+                    <div style="margin: 10px 0;">
+                        <div style="margin-bottom: 15px; font-size: 18px;" id="display-question-${q.id}"></div>
+                        <div style="margin: 15px 0; font-size: 18px;">
+                            <strong>解答:</strong> <span id="display-answer-${q.id}"></span>
+                        </div>
+                        ${q.explanation ? `
+                            <div style="margin: 15px 0; font-size: 16px; color: var(--text-secondary);" id="display-explanation-${q.id}"></div>
+                        ` : ''}
+                        <div style="font-size: 12px; color: var(--text-secondary); margin-top: 8px;">
+                            難易度: ${q.difficulty_level || '未設定'}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+
+            // 数式をレンダリング
+            questions.forEach(q => {
+                if (typeof katex !== 'undefined') {
+                    const questionEl = document.getElementById(`display-question-${q.id}`);
+                    const answerEl = document.getElementById(`display-answer-${q.id}`);
+                    const explanationEl = document.getElementById(`display-explanation-${q.id}`);
+
+                    if (questionEl) questionEl.innerHTML = renderMathInText(q.question_text);
+                    if (answerEl) answerEl.innerHTML = renderMathInText(q.correct_answer);
+                    if (explanationEl && q.explanation) explanationEl.innerHTML = renderMathInText(q.explanation);
+                }
+            });
+        }
+
+        // 新規作成モーダル
+        function showCreateModal() {
+            currentEditId = null;
+            document.getElementById('modalTitle').textContent = '数学問題を作成';
+            document.getElementById('questionForm').reset();
+            updatePreview();
+            showModal('questionModal');
+        }
+
+        // 問題編集
+        async function editQuestion(questionId) {
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/note/questions?subject=math&limit=100`, {
+                    headers: {
+                        'Authorization': `Bearer ${ADMIN_TOKEN}`
+                    }
+                });
+
+                if (!response.ok) throw new Error('Failed to load questions for editing');
+
+                const data = await response.json();
+                const question = data.questions.find(q => q.id === questionId);
+
+                if (!question) {
+                    showMessage('問題が見つかりません', 'error');
+                    return;
+                }
+
+                // フォームに既存データを設定
+                currentEditId = questionId;
+                document.getElementById('modalTitle').textContent = '数学問題を編集';
+                document.getElementById('inputTitle').value = question.title || '';
+                document.getElementById('inputQuestion').value = question.question_text || '';
+                document.getElementById('inputAnswer').value = question.correct_answer || '';
+                document.getElementById('inputDifficulty').value = question.difficulty_level || '';
+                document.getElementById('inputExplanation').value = question.explanation || '';
+
+                // カテゴリを設定
+                if (question.tags) {
+                    try {
+                        const tags = JSON.parse(question.tags);
+                        if (tags.length > 0) {
+                            document.getElementById('inputCategory').value = tags[0];
+                        }
+                    } catch (e) {
+                        console.error('Error parsing tags:', e);
+                    }
+                }
+
+                updatePreview();
+                showModal('questionModal');
+            } catch (error) {
+                showMessage('問題読み込みエラー: ' + error.message, 'error');
+            }
+        }
+
+        // 問題削除
+        async function deleteQuestion(questionId) {
+            if (!confirm('この数学問題を削除しますか？')) return;
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/note/questions/${questionId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${ADMIN_TOKEN}`
+                    }
+                });
+
+                if (response.ok) {
+                    showMessage('問題を削除しました', 'success');
+                    loadContent();
+                } else {
+                    throw new Error('削除に失敗しました');
+                }
+            } catch (error) {
+                showMessage('削除エラー: ' + error.message, 'error');
+            }
+        }
+
+        // 数学問題送信
+        async function handleSubmit(event) {
+            event.preventDefault();
+
+            const formData = {
+                id: currentEditId || `math_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+                subject: 'math',
+                title: document.getElementById('inputTitle').value,
+                question_text: document.getElementById('inputQuestion').value,
+                correct_answer: document.getElementById('inputAnswer').value,
+                explanation: document.getElementById('inputExplanation').value,
+                difficulty_level: document.getElementById('inputDifficulty').value,
+                is_listening: false,
+                mode: null,
+                source: 'learning-notebook'
+            };
+
+            // カテゴリをタグに追加
+            const category = document.getElementById('inputCategory').value;
+            if (category) {
+                formData.tags = JSON.stringify([category]);
+            }
+
+            try {
+                const url = currentEditId
+                    ? `${API_BASE_URL}/api/note/questions/${currentEditId}`
+                    : `${API_BASE_URL}/api/note/questions`;
+
+                const method = currentEditId ? 'PUT' : 'POST';
+
+                const response = await fetch(url, {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${ADMIN_TOKEN}`
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                if (response.ok) {
+                    showMessage(currentEditId ? '問題を更新しました' : '数学問題を作成しました', 'success');
+                    closeModal('questionModal');
+                    loadContent();
+                } else {
+                    const error = await response.json();
+                    throw new Error(error.error || '保存に失敗しました');
+                }
+            } catch (error) {
+                showMessage('保存エラー: ' + error.message, 'error');
+            }
+        }
+
+        // モーダル操作
+        function showModal(modalId) {
+            document.getElementById(modalId).classList.add('active');
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+        }
+
+        // メッセージ表示
+        function showMessage(message, type = 'info') {
+            const messageArea = document.getElementById('messageArea');
+            const messageClass = type === 'success' ? 'success-message' :
+                               type === 'error' ? 'error-message' : 'info-message';
+
+            messageArea.innerHTML = `<div class="${messageClass}">${message}</div>`;
+
+            setTimeout(() => {
+                messageArea.innerHTML = '';
+            }, 5000);
+        }
+
+        // モーダル外クリックで閉じる
+        document.querySelectorAll('.modal').forEach(modal => {
+            modal.addEventListener('click', function(e) {
+                if (e.target === this) {
+                    this.classList.remove('active');
+                }
+            });
+        });
+    </script>
+</body>
+</html>

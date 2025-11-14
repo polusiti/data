@@ -3,298 +3,127 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>問題管理ダッシュボード - Mana</title>
-
-    <!-- Bootstrap 5 CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Font Awesome -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --primary-color: #2196F3;
-            --secondary-color: #1976D2;
-            --success-color: #4CAF50;
-            --warning-color: #FF9800;
-            --text-dark: #333;
-            --text-muted: #666;
-            --bg-light: #f8f9fa;
-            --border-light: #e9ecef;
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
-            min-height: 100vh;
-            color: #333;
-        }
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 2rem;
-        }
-        .header {
-            text-align: center;
-            margin-bottom: 3rem;
-        }
-        .header h1 {
-            color: white;
-            font-size: 2.5rem;
-            font-weight: 700;
-            margin-bottom: 0.5rem;
-        }
-        .header p {
-            color: rgba(255, 255, 255, 0.8);
-            font-size: 1.1rem;
-        }
-        .auth-form {
-            background: white;
-            padding: 2rem;
-            border-radius: 16px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-            max-width: 400px;
-            margin: 0 auto 2rem;
-        }
-        .form-group {
-            margin-bottom: 1.5rem;
-        }
-        .form-group label {
-            display: block;
-            margin-bottom: 0.5rem;
-            font-weight: 500;
-            color: #374151;
-        }
-        .form-group input {
-            width: 100%;
-            padding: 0.75rem;
-            border: 2px solid #e5e7eb;
-            border-radius: 8px;
-            font-size: 1rem;
-            transition: border-color 0.2s;
-        }
-        .form-group input:focus {
-            outline: none;
-            border-color: var(--primary-color);
-        }
-        .btn {
-            width: 100%;
-            padding: 0.875rem;
-            border: none;
-            border-radius: 8px;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        .btn-primary {
-            background: var(--primary-color);
-            color: white;
-        }
-        .btn-primary:hover:not(:disabled) {
-            background: var(--secondary-color);
-        }
-        .btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-        .error {
-            background: #fef2f2;
-            color: #ef4444;
-            padding: 0.75rem;
-            border-radius: 8px;
-            margin-top: 1rem;
-            font-size: 0.9rem;
-            border: 1px solid #fecaca;
-        }
-        .loading {
-            background: #f0f9ff;
-            color: #1e40af;
-            padding: 2rem;
-            border-radius: 12px;
-            text-align: center;
-            font-size: 1.1rem;
-        }
-        .dashboard-content {
-            background: white;
-            padding: 2rem;
-            border-radius: 16px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-        }
-        .success-message {
-            background: #ecfdf5;
-            color: #059669;
-            padding: 1rem;
-            border-radius: 8px;
-            margin-bottom: 2rem;
-            border: 1px solid #a7f3d0;
-        }
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1.5rem;
-            margin-bottom: 2rem;
-        }
-        .stat-card {
-            background: #f8fafc;
-            padding: 1.5rem;
-            border-radius: 12px;
-            text-align: center;
-        }
-        .stat-value {
-            font-size: 2rem;
-            font-weight: 700;
-            margin-bottom: 0.5rem;
-        }
-        .stat-label {
-            color: #64748b;
-            font-size: 0.9rem;
-        }
-    </style>
+    <title>問題管理 - 学習ノート</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Klee+One:wght@400;600&family=Zen+Kurenaido&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../style.css">
 </head>
+
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>🔧 問題管理ダッシュボード</h1>
-            <p>Mana - 統合管理システム</p>
-        </div>
+    <div class="notebook">
+        <div class="doodle-bg doodle-star">★</div>
+        <div class="doodle-bg doodle-heart">♡</div>
+        <div class="doodle-bg doodle-note">♪</div>
+        <div class="doodle-bg doodle-smile">☺</div>
+        <div class="doodle-bg doodle-check">✓</div>
+        <div class="doodle-bg doodle-arrow">→</div>
 
-        <div class="auth-form" id="auth-form">
-            <h3 style="text-align: center; margin-bottom: 1.5rem;">管理者認証</h3>
-            <div class="form-group">
-                <label for="admin-id">管理者ID</label>
-                <input type="text" id="admin-id" placeholder="管理者ID" value="P37600">
-            </div>
-            <div class="form-group">
-                <label for="admin-pass">パスワード</label>
-                <input type="password" id="admin-pass" placeholder="パスワード">
-            </div>
-            <button class="btn btn-primary" onclick="authenticate()" id="auth-button">認証</button>
-            <div id="auth-error" class="error" style="display: none;"></div>
-        </div>
+        <div class="scribble scribble-1"></div>
+        <div class="scribble scribble-2"></div>
 
-        <div id="loading" class="loading" style="display: none;">
-            <p>認証中...</p>
-        </div>
+        <div class="container">
+            <div class="subject-select">
+                <button class="back-btn" onclick="location.href='subject-select.html'">← 学習ノートに戻る</button>
 
-        <div class="dashboard-content" id="dashboard-content" style="display: none;">
-            <div class="success-message">
-                ✅ 認証に成功しました。問題管理システムへようこそ！
-            </div>
+                <h1>問題管理</h1>
+                <p class="subtitle">科目を選んで問題を管理してください</p>
 
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <div class="stat-value">✅</div>
-                    <div class="stat-label">システム状態</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-value">8</div>
-                    <div class="stat-label">対応形式</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-value">JSON</div>
-                    <div class="stat-label">一括登録</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-value">API</div>
-                    <div class="stat-label">完全連携</div>
-                </div>
-            </div>
-
-            <div style="background: white; padding: 2rem; border-radius: 12px; margin-bottom: 2rem;">
-                <h3 style="margin-bottom: 1rem;">🚀 利用可能な機能</h3>
-                <ul style="line-height: 1.8; color: #374151;">
-                    <li>✓ jsonplan.md準拠の8形式問題登録</li>
-                    <li>✓ JSON一括インポート機能</li>
-                    <li>✓ APIエンドポイント統一管理</li>
-                    <li>✓ パスキー認証システム</li>
-                </ul>
-            </div>
-
-            <div style="text-align: center; margin-top: 2rem;">
-                <h3 style="color: white; margin-bottom: 1rem;">📊 問題管理システム</h3>
-                <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
-                    <a href="https://unified-api-production.t88596565.workers.dev/pages/question-management.html"
-                       style="color: white; font-size: 1.2rem; background: rgba(255,255,255,0.2); padding: 1rem 2rem;
-                              border-radius: 8px; text-decoration: none; display: inline-block; margin-bottom: 1rem;">
-                        📝 問題管理画面
-                    </a>
-                    <a href="/pages/subject-select.html"
-                       style="color: white; font-size: 1.2rem; background: rgba(16, 185, 129, 0.3); padding: 1rem 2rem;
-                              border-radius: 8px; text-decoration: none; display: inline-block; margin-bottom: 1rem;">
-                        📚 学習画面
-                    </a>
+                <div class="stats" style="margin-bottom: 30px;">
+                    <p class="stat">総問題数: <span id="totalQuestions">0</span></p>
+                    <p class="stat">科目数: <span>6</span></p>
                 </div>
 
-                <div style="margin-top: 2rem;">
-                    <button onclick="window.location.href='/'"
-                            style="color: #1e293b; background: white; padding: 0.75rem 1.5rem;
-                                   border: none; border-radius: 8px; font-size: 1rem; font-weight: 600; cursor: pointer;">
-                        🏠 ホームに戻る
-                    </button>
+                <div class="subject-grid" id="subjectGrid">
+                    <!-- 科目カードは動的に生成 -->
                 </div>
             </div>
         </div>
     </div>
 
     <script>
-        // 認証処理
-        async function authenticate() {
-            const adminId = document.getElementById('admin-id').value;
-            const password = document.getElementById('admin-pass').value;
-            const errorElement = document.getElementById('auth-error');
-            const authButton = document.getElementById('auth-button');
+        // API Base URL
+        const API_BASE_URL = 'https://questa-r2-api.t88596565.workers.dev';
 
-            // バリデーション
-            if (!adminId || !password) {
-                errorElement.textContent = 'IDとパスワードを入力してください';
-                errorElement.style.display = 'block';
-                return;
+        // 科目マッピング
+        const subjectMapping = {
+            'english-listening': 'english-listening',
+            'english-vocabulary': 'english-vocabulary',
+            'english-grammar': 'english-grammar',
+            'math': 'math',
+            'physics': 'physics',
+            'chemistry': 'chemistry'
+        };
+
+        // 科目アイコンとURLマッピング
+        const subjectInfo = {
+            'english-listening': { icon: '🎧', url: 'english-listening/' },
+            'english-vocabulary': { icon: 'A', url: 'english-vocabulary/' },
+            'english-grammar': { icon: 'G', url: 'english-grammar/' },
+            'math': { icon: '∑', url: 'math/' },
+            'physics': { icon: '⚛', url: 'physics/' },
+            'chemistry': { icon: '⚗', url: 'chemistry/' }
+        };
+
+        // ページ読み込み時に問題数を取得
+        async function loadQuestionCounts() {
+            let totalCount = 0;
+            const subjectGrid = document.getElementById('subjectGrid');
+
+            // 科目名マッピング
+            const subjectNames = {
+                'english-listening': '英語リスニング',
+                'english-vocabulary': '英語単語',
+                'english-grammar': '英文法',
+                'math': '数学',
+                'physics': '物理',
+                'chemistry': '化学'
+            };
+
+            let gridHTML = '';
+
+            for (const [subject, apiSubject] of Object.entries(subjectMapping)) {
+                try {
+                    const response = await fetch(`${API_BASE_URL}/api/note/questions?subject=${apiSubject}&limit=1`);
+                    let count = 0;
+
+                    if (response.ok) {
+                        const data = await response.json();
+                        count = data.total || data.questions?.length || 0;
+                        totalCount += count;
+                    } else {
+                        console.error(`Failed to load count for ${subject}:`, response.status);
+                    }
+
+                    gridHTML += `
+                        <div class="subject-card" onclick="location.href='${subjectInfo[subject].url}'">
+                            <div class="subject-icon">${subjectInfo[subject].icon}</div>
+                            <div class="subject-name">${subjectNames[subject]}</div>
+                            <p class="stat" style="margin-top: 10px; font-size: 14px;">
+                                <span id="count-${subject}">${count}</span> 問題
+                            </p>
+                        </div>
+                    `;
+                } catch (error) {
+                    console.error(`Failed to load count for ${subject}:`, error);
+                    gridHTML += `
+                        <div class="subject-card" onclick="location.href='${subjectInfo[subject].url}'">
+                            <div class="subject-icon">${subjectInfo[subject].icon}</div>
+                            <div class="subject-name">${subjectNames[subject]}</div>
+                            <p class="stat" style="margin-top: 10px; font-size: 14px;">
+                                <span id="count-${subject}">?</span> 問題
+                            </p>
+                        </div>
+                    `;
+                }
             }
 
-            // 認証情報
-            const validCredentials = [
-                { id: 'P37600', password: 'l710645' }
-            ];
-
-            const isValid = validCredentials.some(cred =>
-                cred.id === adminId && cred.password === password
-            );
-
-            if (isValid) {
-                // 認証成功
-                errorElement.style.display = 'none';
-                document.getElementById('auth-form').style.display = 'none';
-                document.getElementById('loading').style.display = 'block';
-
-                // ダッシュボード表示
-                setTimeout(() => {
-                    document.getElementById('loading').style.display = 'none';
-                    document.getElementById('dashboard-content').style.display = 'block';
-                    document.querySelector('.header p').textContent = '管理者ダッシュボード - 認証済み';
-                }, 500);
-            } else {
-                // 認証失敗
-                errorElement.textContent = 'IDまたはパスワードが間違っています';
-                errorElement.style.display = 'block';
-                document.getElementById('admin-pass').value = '';
-                document.getElementById('admin-pass').focus();
-            }
+            subjectGrid.innerHTML = gridHTML;
+            document.getElementById('totalQuestions').textContent = totalCount;
         }
 
-        // キーボードイベント
-        document.getElementById('admin-pass').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') authenticate();
-        });
-
-        // 初期化
-        document.addEventListener('DOMContentLoaded', () => {
-            document.getElementById('admin-pass').focus();
-        });
+        // ページ読み込み時に実行
+        document.addEventListener('DOMContentLoaded', loadQuestionCounts);
     </script>
 </body>
 </html>
