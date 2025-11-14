@@ -210,6 +210,7 @@
             <div style="display: flex; gap: 10px; margin: 20px 0; flex-wrap: wrap;">
                 <button onclick="showCreateModal()" style="flex: 1; min-width: 150px;">🎵 新規単一問題作成</button>
                 <button onclick="showPassageModal()" style="flex: 1; min-width: 180px;">📻 東大パッセージ作成</button>
+                <button onclick="showBulkUploadModal()" style="flex: 1; min-width: 180px;">📦 JSON一括アップロード</button>
                 <button onclick="toggleViewMode()" style="flex: 1; min-width: 150px;" class="btn-small">表示切替</button>
                 <button onclick="loadContent()" style="flex: 1; min-width: 150px;" class="btn-small">再読込</button>
             </div>
@@ -229,11 +230,16 @@
                     <input type="text" id="inputTitle" required placeholder="例: 日常会話 - 買い物">
                 </div>
                 <div class="form-group">
-                    <label>音声ファイル（R2にアップロード）</label>
-                    <input type="text" id="inputAudioUrl" placeholder="R2の音声URL（例: https://pub-xxx.r2.dev/audio.wav）">
+                    <label>音声ファイル</label>
+                    <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 10px;">
+                        <input type="file" id="audioFileInput" accept="audio/*" style="flex: 1;">
+                        <button type="button" onclick="uploadAudioFile()" class="btn-small" id="uploadAudioBtn">アップロード</button>
+                    </div>
+                    <input type="text" id="inputAudioUrl" placeholder="または直接URLを入力（例: https://pub-xxx.r2.dev/audio.wav）">
                     <div id="audioPreview" style="margin-top: 10px; display: none;">
                         <audio controls style="width: 100%; max-width: 400px;"></audio>
                     </div>
+                    <div id="uploadProgress" style="display: none; margin-top: 10px; color: #3b82f6; font-size: 14px;"></div>
                 </div>
                 <div class="form-group">
                     <label>問題文</label>
@@ -296,11 +302,16 @@
                     <input type="text" id="passageTitle" required placeholder="例: これから放送するのは、海底ケーブルの歴史に関する講義である。">
                 </div>
                 <div class="form-group">
-                    <label>音声ファイル（R2にアップロード）</label>
-                    <input type="text" id="passageAudioUrl" required placeholder="R2の音声URL">
+                    <label>音声ファイル</label>
+                    <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 10px;">
+                        <input type="file" id="passageAudioFileInput" accept="audio/*" style="flex: 1;">
+                        <button type="button" onclick="uploadPassageAudioFile()" class="btn-small" id="uploadPassageAudioBtn">アップロード</button>
+                    </div>
+                    <input type="text" id="passageAudioUrl" required placeholder="または直接URLを入力">
                     <div id="passageAudioPreview" style="margin-top: 10px; display: none;">
                         <audio controls style="width: 100%; max-width: 400px;"></audio>
                     </div>
+                    <div id="passageUploadProgress" style="display: none; margin-top: 10px; color: #3b82f6; font-size: 14px;"></div>
                 </div>
                 <div class="form-group">
                     <label>パッセージスクリプト（任意）</label>
@@ -333,6 +344,46 @@
                     <button type="submit">保存</button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- JSON一括アップロードモーダル -->
+    <div id="bulkUploadModal" class="modal">
+        <div class="modal-content">
+            <h3>JSON一括アップロード</h3>
+            <p style="color: #64748b; font-size: 14px; margin-bottom: 20px;">
+                JSON形式で複数の問題を一括登録できます。以下の形式に従ってください：
+            </p>
+            <pre style="background: #f8fafc; padding: 15px; border-radius: 8px; overflow-x: auto; font-size: 12px; margin-bottom: 20px;">
+{
+  "questions": [
+    {
+      "id": "question_123",
+      "subject": "english-listening",
+      "title": "問題タイトル",
+      "question_text": "問題文",
+      "choices": ["選択肢A", "選択肢B", "選択肢C", "選択肢D"],
+      "correct_answer": "A",
+      "explanation": "解説",
+      "difficulty_level": "listen_general",
+      "is_listening": true,
+      "media_urls": ["https://pub-xxx.r2.dev/audio.wav"]
+    }
+  ]
+}</pre>
+            <div class="form-group">
+                <label>JSONファイルを選択</label>
+                <input type="file" id="bulkUploadFile" accept=".json" style="width: 100%; padding: 12px; border: 2px solid var(--button-border); border-radius: 4px;">
+            </div>
+            <div id="bulkUploadPreview" style="display: none; margin: 15px 0; padding: 15px; background: #f0f9ff; border-radius: 8px;">
+                <p style="font-weight: 600; margin-bottom: 5px;">プレビュー:</p>
+                <p id="bulkUploadCount" style="color: #1e40af; font-size: 14px;"></p>
+            </div>
+            <div class="modal-actions">
+                <button type="button" onclick="closeModal('bulkUploadModal')" class="btn-danger">キャンセル</button>
+                <button type="button" onclick="handleBulkUpload()" id="bulkUploadBtn" disabled>アップロード</button>
+            </div>
+            <div id="bulkUploadResult" style="display: none; margin-top: 15px;"></div>
         </div>
     </div>
 
@@ -453,7 +504,7 @@
             }
 
             container.innerHTML = passages.map(passage => `
-                <div class="passage-item" id="passage-${passage.passage_id}">
+                <div class="passage-item" id="passage-${passage.id}">
                     <div class="passage-header">
                         <div class="passage-title">${passage.title}</div>
                         <div class="passage-meta">
@@ -461,8 +512,8 @@
                             ${passage.media_urls?.length > 0 ? '🎵 音声あり' : '🔇 音声なし'}
                         </div>
                         <div class="question-actions">
-                            <button class="btn-small" onclick="editPassage('${passage.passage_id}')">編集</button>
-                            <button class="btn-small btn-danger" onclick="deletePassage('${passage.passage_id}')">削除</button>
+                            <button class="btn-small" onclick="editPassage('${passage.id}')">編集</button>
+                            <button class="btn-small btn-danger" onclick="deletePassage('${passage.id}')">削除</button>
                         </div>
                     </div>
                     ${passage.media_urls?.length > 0 ? `
@@ -472,16 +523,16 @@
                             </audio>
                         </div>
                     ` : ''}
-                    <button class="toggle-btn" onclick="togglePassageQuestions('${passage.passage_id}')">
+                    <button class="toggle-btn" onclick="togglePassageQuestions('${passage.id}')">
                         ▼ 問題を表示/非表示
                     </button>
-                    <div class="question-group" id="questions-${passage.passage_id}"></div>
+                    <div class="question-group" id="questions-${passage.id}"></div>
                 </div>
             `).join('');
 
             // 各パッセージの問題を読み込む
             passages.forEach(passage => {
-                loadPassageQuestions(passage.passage_id);
+                loadPassageQuestions(passage.id);
             });
         }
 
@@ -900,6 +951,235 @@
                 }
             });
         });
+
+        // 音声ファイルアップロード（単一問題用）
+        async function uploadAudioFile() {
+            const fileInput = document.getElementById('audioFileInput');
+            const file = fileInput.files[0];
+
+            if (!file) {
+                showMessage('音声ファイルを選択してください', 'error');
+                return;
+            }
+
+            const uploadBtn = document.getElementById('uploadAudioBtn');
+            const progressDiv = document.getElementById('uploadProgress');
+
+            try {
+                uploadBtn.disabled = true;
+                uploadBtn.textContent = 'アップロード中...';
+                progressDiv.style.display = 'block';
+                progressDiv.textContent = 'アップロード中...';
+
+                const formData = new FormData();
+                formData.append('audio', file);
+                formData.append('questionId', currentEditId || `audio_${Date.now()}`);
+
+                const response = await fetch(`${API_BASE_URL}/api/r2/upload/audio`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    throw new Error('アップロードに失敗しました');
+                }
+
+                const result = await response.json();
+
+                // URLを入力欄に設定
+                document.getElementById('inputAudioUrl').value = result.url;
+
+                // プレビューを表示
+                const preview = document.getElementById('audioPreview');
+                preview.style.display = 'block';
+                preview.querySelector('audio').src = result.url;
+
+                progressDiv.textContent = '✅ アップロード完了！';
+                setTimeout(() => {
+                    progressDiv.style.display = 'none';
+                }, 3000);
+
+            } catch (error) {
+                progressDiv.textContent = '❌ ' + error.message;
+                progressDiv.style.color = '#ef4444';
+                showMessage('音声アップロードエラー: ' + error.message, 'error');
+            } finally {
+                uploadBtn.disabled = false;
+                uploadBtn.textContent = 'アップロード';
+            }
+        }
+
+        // 音声ファイルアップロード（パッセージ用）
+        async function uploadPassageAudioFile() {
+            const fileInput = document.getElementById('passageAudioFileInput');
+            const file = fileInput.files[0];
+
+            if (!file) {
+                showMessage('音声ファイルを選択してください', 'error');
+                return;
+            }
+
+            const uploadBtn = document.getElementById('uploadPassageAudioBtn');
+            const progressDiv = document.getElementById('passageUploadProgress');
+
+            try {
+                uploadBtn.disabled = true;
+                uploadBtn.textContent = 'アップロード中...';
+                progressDiv.style.display = 'block';
+                progressDiv.textContent = 'アップロード中...';
+
+                const formData = new FormData();
+                formData.append('audio', file);
+                formData.append('questionId', `passage_${Date.now()}`);
+
+                const response = await fetch(`${API_BASE_URL}/api/r2/upload/audio`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    throw new Error('アップロードに失敗しました');
+                }
+
+                const result = await response.json();
+
+                // URLを入力欄に設定
+                document.getElementById('passageAudioUrl').value = result.url;
+
+                // プレビューを表示
+                const preview = document.getElementById('passageAudioPreview');
+                preview.style.display = 'block';
+                preview.querySelector('audio').src = result.url;
+
+                progressDiv.textContent = '✅ アップロード完了！';
+                setTimeout(() => {
+                    progressDiv.style.display = 'none';
+                }, 3000);
+
+            } catch (error) {
+                progressDiv.textContent = '❌ ' + error.message;
+                progressDiv.style.color = '#ef4444';
+                showMessage('音声アップロードエラー: ' + error.message, 'error');
+            } finally {
+                uploadBtn.disabled = false;
+                uploadBtn.textContent = 'アップロード';
+            }
+        }
+
+        // JSON一括アップロードモーダル表示
+        function showBulkUploadModal() {
+            document.getElementById('bulkUploadFile').value = '';
+            document.getElementById('bulkUploadPreview').style.display = 'none';
+            document.getElementById('bulkUploadResult').style.display = 'none';
+            document.getElementById('bulkUploadBtn').disabled = true;
+            showModal('bulkUploadModal');
+        }
+
+        // JSONファイル選択時のプレビュー
+        document.addEventListener('DOMContentLoaded', () => {
+            const fileInput = document.getElementById('bulkUploadFile');
+            if (fileInput) {
+                fileInput.addEventListener('change', async function(e) {
+                    const file = e.target.files[0];
+                    if (!file) return;
+
+                    try {
+                        const text = await file.text();
+                        const data = JSON.parse(text);
+
+                        if (!data.questions || !Array.isArray(data.questions)) {
+                            throw new Error('JSONフォーマットが正しくありません。"questions"配列が必要です。');
+                        }
+
+                        const preview = document.getElementById('bulkUploadPreview');
+                        const count = document.getElementById('bulkUploadCount');
+
+                        preview.style.display = 'block';
+                        count.textContent = `${data.questions.length}件の問題が検出されました`;
+
+                        document.getElementById('bulkUploadBtn').disabled = false;
+
+                    } catch (error) {
+                        showMessage('JSONファイルの読み込みエラー: ' + error.message, 'error');
+                        document.getElementById('bulkUploadBtn').disabled = true;
+                    }
+                });
+            }
+        });
+
+        // JSON一括アップロード実行
+        async function handleBulkUpload() {
+            const fileInput = document.getElementById('bulkUploadFile');
+            const file = fileInput.files[0];
+
+            if (!file) {
+                showMessage('JSONファイルを選択してください', 'error');
+                return;
+            }
+
+            const uploadBtn = document.getElementById('bulkUploadBtn');
+            const resultDiv = document.getElementById('bulkUploadResult');
+
+            try {
+                uploadBtn.disabled = true;
+                uploadBtn.textContent = 'アップロード中...';
+
+                const text = await file.text();
+                const data = JSON.parse(text);
+
+                const response = await fetch(`${API_BASE_URL}/api/d1/questions/batch`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${ADMIN_TOKEN}`
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'アップロードに失敗しました');
+                }
+
+                const result = await response.json();
+
+                resultDiv.style.display = 'block';
+                resultDiv.innerHTML = `
+                    <div style="background: #ecfdf5; color: #059669; padding: 15px; border-radius: 8px; border: 1px solid #a7f3d0;">
+                        <p style="font-weight: 600; margin-bottom: 5px;">✅ アップロード完了</p>
+                        <p style="font-size: 14px;">成功: ${result.imported}件</p>
+                        <p style="font-size: 14px;">失敗: ${result.failed}件</p>
+                        ${result.errors && result.errors.length > 0 ? `
+                            <details style="margin-top: 10px;">
+                                <summary style="cursor: pointer; font-size: 14px;">エラー詳細</summary>
+                                <pre style="background: white; padding: 10px; margin-top: 5px; border-radius: 4px; font-size: 12px; overflow-x: auto;">${JSON.stringify(result.errors, null, 2)}</pre>
+                            </details>
+                        ` : ''}
+                    </div>
+                `;
+
+                showMessage(`一括アップロード完了: 成功 ${result.imported}件, 失敗 ${result.failed}件`, 'success');
+
+                // 3秒後にモーダルを閉じて再読込
+                setTimeout(() => {
+                    closeModal('bulkUploadModal');
+                    loadContent();
+                }, 3000);
+
+            } catch (error) {
+                resultDiv.style.display = 'block';
+                resultDiv.innerHTML = `
+                    <div style="background: #fef2f2; color: #ef4444; padding: 15px; border-radius: 8px; border: 1px solid #fecaca;">
+                        <p style="font-weight: 600;">❌ アップロードエラー</p>
+                        <p style="font-size: 14px; margin-top: 5px;">${error.message}</p>
+                    </div>
+                `;
+                showMessage('一括アップロードエラー: ' + error.message, 'error');
+            } finally {
+                uploadBtn.disabled = false;
+                uploadBtn.textContent = 'アップロード';
+            }
+        }
     </script>
 </body>
 </html>
