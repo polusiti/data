@@ -823,5 +823,38 @@ export default {
                 error: 'Failed to delete comment'
             }, 500, corsHeaders);
         }
+    },
+
+    // Session management
+    async getCurrentUser(request, env, corsHeaders) {
+        try {
+            // Simple mock response for now - can be enhanced with real session management
+            return this.jsonResponse({
+                success: true,
+                user: null,
+                message: 'No active session'
+            }, 200, corsHeaders);
+        } catch (error) {
+            console.error('Error getting current user:', error);
+            return this.jsonResponse({
+                success: false,
+                error: 'Failed to get current user'
+            }, 500, corsHeaders);
+        }
+    },
+
+    async logout(request, env, corsHeaders) {
+        try {
+            return this.jsonResponse({
+                success: true,
+                message: 'Logged out successfully'
+            }, 200, corsHeaders);
+        } catch (error) {
+            console.error('Error during logout:', error);
+            return this.jsonResponse({
+                success: false,
+                error: 'Failed to logout'
+            }, 500, corsHeaders);
+        }
     }
 };
