@@ -199,12 +199,8 @@
             <h3 id="modalTitle">化学問題を作成</h3>
             <form id="questionForm" onsubmit="handleSubmit(event)">
                 <div class="form-group">
-                    <label>問題タイトル</label>
-                    <input type="text" id="inputTitle" required placeholder="例: 水の化学式">
-                </div>
-                <div class="form-group">
                     <label>問題文（化学式対応）</label>
-                    <textarea id="inputQuestion" required placeholder="例: 水の化学式は？" oninput="updatePreview()"></textarea>
+                    <textarea id="inputQuestion" required placeholder="例: アンモニア合成反応 N2 + 3H2 ⇄ 2NH3 の平衡定数Kを、圧力で表せ。" oninput="updatePreview()"></textarea>
                     <div class="katex-help">
                         化学式は $...$ で囲んでください（例: $\text{H}_2\text{O}$）
                     </div>
@@ -219,7 +215,7 @@
                 </div>
                 <div class="form-group">
                     <label>解答（化学式対応）</label>
-                    <input type="text" id="inputAnswer" required placeholder="例: $\text{H}_2\text{O}$" oninput="updatePreview()">
+                    <input type="text" id="inputAnswer" required placeholder="例: $K = (p_{\text{NH}_3}^2)/(p_{\text{N}_2} \cdot p_{\text{H}_2}^3)$" oninput="updatePreview()">
                     <div class="katex-help">
                         解答も化学式形式で
                     </div>
@@ -227,30 +223,43 @@
                 </div>
                 <div class="form-group">
                     <label>解説（化学式対応・任意）</label>
-                    <textarea id="inputExplanation" placeholder="例: 水素原子2個と酸素原子1個が結合した化合物です。" oninput="updatePreview()"></textarea>
+                    <textarea id="inputExplanation" placeholder="例: 一般に K = (生成物の分圧の積)/(反応物の分圧の積)。" oninput="updatePreview()"></textarea>
                     <div class="formula-preview" id="explanationPreview"></div>
                 </div>
                 <div class="form-group">
                     <label>難易度</label>
                     <select id="inputDifficulty" required>
                         <option value="">選択してください</option>
-                        <option value="easy">簡単（中学化学）</option>
-                        <option value="medium">普通（高校化学）</option>
-                        <option value="hard">難しい（大学入試）</option>
+                        <option value="1">1 - 基礎（中学化学）</option>
+                        <option value="2">2 - 標準（高校基礎）</option>
+                        <option value="3">3 - やや難（高校発展）</option>
+                        <option value="4">4 - 難問（大学入試）</option>
+                        <option value="5">5 - 超難問（東大・京大）</option>
                     </select>
                 </div>
                 <div class="form-group">
-                    <label>分野</label>
+                    <label>分野（任意）</label>
                     <select id="inputCategory">
                         <option value="">選択してください</option>
-                        <option value="theory">理論化学</option>
-                        <option value="inorganic">無機化学</option>
-                        <option value="organic">有機化学</option>
-                        <option value="analytical">分析化学</option>
-                        <option value="physical">物理化学</option>
-                        <option value="biochemistry">生化学</option>
-                        <option value="other">その他</option>
+                        <option value="理論化学">理論化学</option>
+                        <option value="無機化学">無機化学</option>
+                        <option value="有機化学">有機化学</option>
+                        <option value="分析化学">分析化学</option>
+                        <option value="物理化学">物理化学</option>
+                        <option value="生化学">生化学</option>
+                        <option value="その他">その他</option>
                     </select>
+                </div>
+                <div class="form-group">
+                    <label>出典（任意）</label>
+                    <input type="text" id="inputSource" placeholder="例: 東大2023理科 第2問 / 自作 / 教科書p.150">
+                </div>
+                <div class="form-group">
+                    <label>画像URL（任意）</label>
+                    <input type="text" id="inputMediaUrl" placeholder="例: https://example.com/images/chemistry_001.png">
+                    <div class="katex-help">
+                        構造式や図の画像URL（R2ストレージ等）
+                    </div>
                 </div>
                 <div class="modal-actions">
                     <button type="button" onclick="closeModal('questionModal')" class="btn-danger">キャンセル</button>
@@ -262,10 +271,96 @@
 
     <script>
         // API Base URL
-        const API_BASE_URL = 'https://questa-r2-api.t88596565.workers.dev';
+        const API_BASE_URL = 'https://api.allfrom0.top';
 
         let currentEditId = null;
         const ADMIN_TOKEN = localStorage.getItem('questa_admin_token') || 'questa-admin-2024';
+
+        // 短縮形式 → API形式 変換
+        function convertToAPI(shortForm) {
+            const apiForm = {
+                id: shortForm.id,
+                subject: 'chemistry',
+                title: shortForm.q.substring(0, 50),
+                question_text: shortForm.q,
+                correct_answer: shortForm.a,
+                explanation: shortForm.e || '',
+                difficulty_level: convertDifficulty(shortForm.d),
+                is_listening: false,
+                mode: null,
+                source: shortForm.src || 'learning-notebook'
+            };
+
+            // タグ
+            if (shortForm.tag && shortForm.tag.length > 0) {
+                apiForm.tags = JSON.stringify(shortForm.tag);
+            }
+
+            // 化学専用: media (画像など)
+            if (shortForm.media) {
+                if (typeof shortForm.media === 'object' && shortForm.media.image) {
+                    apiForm.media_urls = JSON.stringify([shortForm.media.image]);
+                } else if (typeof shortForm.media === 'string') {
+                    apiForm.media_urls = JSON.stringify([shortForm.media]);
+                }
+            }
+
+            return apiForm;
+        }
+
+        // API形式 → 短縮形式 変換（表示用）
+        function convertFromAPI(apiForm) {
+            const shortForm = {
+                id: apiForm.id,
+                q: apiForm.question_text,
+                a: apiForm.correct_answer,
+                e: apiForm.explanation || '',
+                d: convertDifficultyReverse(apiForm.difficulty_level || apiForm.difficulty),
+                tag: apiForm.tags ? (typeof apiForm.tags === 'string' ? JSON.parse(apiForm.tags) : apiForm.tags) : [],
+                src: apiForm.source || ''
+            };
+
+            // 化学専用: media
+            if (apiForm.media_urls) {
+                try {
+                    const urls = typeof apiForm.media_urls === 'string' ? JSON.parse(apiForm.media_urls) : apiForm.media_urls;
+                    if (urls && urls.length > 0) {
+                        shortForm.media = { image: urls[0] };
+                    }
+                } catch (e) {
+                    console.error('Error parsing media_urls:', e);
+                }
+            }
+
+            return shortForm;
+        }
+
+        // 難易度変換 (1-5 → "easy"/"medium"/"hard")
+        function convertDifficulty(d) {
+            if (!d) return 'easy';
+            if (['easy', 'medium', 'hard'].includes(d)) return d;
+
+            const num = parseInt(d);
+            if (num === 1) return 'easy';
+            if (num === 2) return 'easy';
+            if (num === 3) return 'medium';
+            if (num === 4) return 'hard';
+            if (num === 5) return 'hard';
+
+            return 'medium';
+        }
+
+        // 難易度逆変換 ("easy"/"medium"/"hard" → 1-5)
+        function convertDifficultyReverse(difficultyLevel) {
+            if (!difficultyLevel) return '2';
+            if (['1', '2', '3', '4', '5'].includes(difficultyLevel)) return difficultyLevel;
+
+            if (difficultyLevel === 'easy') return '2';
+            if (difficultyLevel === 'medium') return '3';
+            if (difficultyLevel === 'hard') return '4';
+
+            return '2';
+        }
 
         // ページ読み込み時に実行
         document.addEventListener('DOMContentLoaded', () => {
@@ -426,7 +521,46 @@
 
         // 問題編集
         async function editQuestion(questionId) {
-            showMessage('問題編集機能は開発中です', 'info');
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/note/questions?subject=chemistry&limit=100`, {
+                    headers: {
+                        'Authorization': `Bearer ${ADMIN_TOKEN}`
+                    }
+                });
+
+                if (!response.ok) throw new Error('Failed to load questions for editing');
+
+                const data = await response.json();
+                const question = data.questions.find(q => q.id === questionId);
+
+                if (!question) {
+                    showMessage('問題が見つかりません', 'error');
+                    return;
+                }
+
+                // API形式 → 短縮形式に変換
+                const shortForm = convertFromAPI(question);
+
+                // フォームに既存データを設定（短縮形式）
+                currentEditId = questionId;
+                document.getElementById('modalTitle').textContent = '化学問題を編集';
+                document.getElementById('inputQuestion').value = shortForm.q || '';
+                document.getElementById('inputAnswer').value = shortForm.a || '';
+                document.getElementById('inputExplanation').value = shortForm.e || '';
+                document.getElementById('inputDifficulty').value = shortForm.d || '2';
+                document.getElementById('inputSource').value = shortForm.src || '';
+                document.getElementById('inputMediaUrl').value = (shortForm.media && shortForm.media.image) || '';
+
+                // カテゴリを設定
+                if (shortForm.tag && shortForm.tag.length > 0) {
+                    document.getElementById('inputCategory').value = shortForm.tag[0];
+                }
+
+                updatePreview();
+                showModal('questionModal');
+            } catch (error) {
+                showMessage('問題読み込みエラー: ' + error.message, 'error');
+            }
         }
 
         // 問題削除
@@ -456,24 +590,31 @@
         async function handleSubmit(event) {
             event.preventDefault();
 
-            const formData = {
-                id: currentEditId || `chemistry_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-                subject: 'chemistry',
-                title: document.getElementById('inputTitle').value,
-                question_text: document.getElementById('inputQuestion').value,
-                correct_answer: document.getElementById('inputAnswer').value,
-                explanation: document.getElementById('inputExplanation').value,
-                difficulty_level: document.getElementById('inputDifficulty').value,
-                is_listening: false,
-                mode: null,
-                source: 'learning-notebook'
+            // 短縮形式でデータ構築
+            const shortForm = {
+                id: currentEditId || `chem_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+                q: document.getElementById('inputQuestion').value,
+                a: document.getElementById('inputAnswer').value,
+                e: document.getElementById('inputExplanation').value,
+                d: document.getElementById('inputDifficulty').value,
+                tag: [],
+                src: document.getElementById('inputSource')?.value || '自作'
             };
 
-            // 分野をタグに追加
+            // カテゴリをタグに追加
             const category = document.getElementById('inputCategory').value;
             if (category) {
-                formData.tags = JSON.stringify([category]);
+                shortForm.tag.push(category);
             }
+
+            // 画像URL
+            const mediaUrl = document.getElementById('inputMediaUrl').value;
+            if (mediaUrl) {
+                shortForm.media = { image: mediaUrl };
+            }
+
+            // 短縮形式 → API形式に変換
+            const apiData = convertToAPI(shortForm);
 
             try {
                 const url = currentEditId
@@ -488,7 +629,7 @@
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${ADMIN_TOKEN}`
                     },
-                    body: JSON.stringify(formData)
+                    body: JSON.stringify(apiData)
                 });
 
                 if (response.ok) {

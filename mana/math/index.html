@@ -192,50 +192,62 @@
             <h3 id="modalTitle">数学問題を作成</h3>
             <form id="questionForm" onsubmit="handleSubmit(event)">
                 <div class="form-group">
-                    <label>問題タイトル</label>
-                    <input type="text" id="inputTitle" required placeholder="例: 基本の足し算">
-                </div>
-                <div class="form-group">
                     <label>問題文（KaTeX数式対応）</label>
-                    <textarea id="inputQuestion" required placeholder="例: $3 + 5 = ?$" oninput="updatePreview()"></textarea>
+                    <textarea id="inputQuestion" required placeholder="例: 関数 $f(x)=x^3-3x^2+2x$ の極値を求めよ。" oninput="updatePreview()"></textarea>
                     <div class="katex-help">
-                        数式は $...$ で囲んでください（例: $x^2 + 2x + 1$）
+                        数式は $...$ で囲む（例: $x^2 + 2x + 1$）
                     </div>
                     <div class="formula-preview" id="questionPreview"></div>
                 </div>
                 <div class="form-group">
-                    <label>解答（KaTeX数式対応）</label>
-                    <input type="text" id="inputAnswer" required placeholder="例: $8$" oninput="updatePreview()">
+                    <label>解答（変換後の数値）</label>
+                    <input type="text" id="inputAnswer" required placeholder="例: 9" oninput="updatePreview()">
                     <div class="katex-help">
-                        解答も数式形式で（例: $\sqrt{16}$）
+                        sugakuplan.mdのルールに従って変換した数値（例: √3+log(1/3)+2/3 → 12）
                     </div>
                     <div class="formula-preview" id="answerPreview"></div>
                 </div>
                 <div class="form-group">
+                    <label>元の答え形式（任意）</label>
+                    <input type="text" id="inputAnswerRaw" placeholder="例: (3±√3)/3">
+                    <div class="katex-help">
+                        変換前の元の形式（表示用）
+                    </div>
+                </div>
+                <div class="form-group">
                     <label>解説（KaTeX数式対応・任意）</label>
-                    <textarea id="inputExplanation" placeholder="例: $3 + 5 = 8$ になります。" oninput="updatePreview()"></textarea>
+                    <textarea id="inputExplanation" placeholder="例: $f'(x)=3x^2-6x+2$, $f'(x)=0$ より $x=(3±√3)/3$" oninput="updatePreview()"></textarea>
                     <div class="formula-preview" id="explanationPreview"></div>
                 </div>
                 <div class="form-group">
                     <label>難易度</label>
                     <select id="inputDifficulty" required>
                         <option value="">選択してください</option>
-                        <option value="easy">簡単（中学）</option>
-                        <option value="medium">普通（高校）</option>
-                        <option value="hard">難しい（大学受験）</option>
+                        <option value="1">1 - 教科書レベル</option>
+                        <option value="2">2 - 標準レベル</option>
+                        <option value="3">3 - やや難（東大標準）</option>
+                        <option value="4">4 - 難問（東大難問）</option>
+                        <option value="5">5 - 超難問（IMO第六問）</option>
                     </select>
                 </div>
                 <div class="form-group">
                     <label>カテゴリ（任意）</label>
                     <select id="inputCategory">
                         <option value="">選択してください</option>
-                        <option value="algebra">代数</option>
-                        <option value="geometry">幾何</option>
-                        <option value="calculus">微積分</option>
-                        <option value="statistics">統計</option>
-                        <option value="probability">確率</option>
-                        <option value="other">その他</option>
+                        <option value="微分">微分</option>
+                        <option value="積分">積分</option>
+                        <option value="極限">極限</option>
+                        <option value="数列">数列</option>
+                        <option value="ベクトル">ベクトル</option>
+                        <option value="確率">確率</option>
+                        <option value="整数">整数</option>
+                        <option value="図形">図形</option>
+                        <option value="その他">その他</option>
                     </select>
+                </div>
+                <div class="form-group">
+                    <label>出典（任意）</label>
+                    <input type="text" id="inputSource" placeholder="例: 東大2023理科 第1問 / 自作 / 教科書p.85">
                 </div>
                 <div class="modal-actions">
                     <button type="button" onclick="closeModal('questionModal')" class="btn-danger">キャンセル</button>
@@ -247,10 +259,91 @@
 
     <script>
         // API Base URL
-        const API_BASE_URL = 'https://questa-r2-api.t88596565.workers.dev';
+        const API_BASE_URL = 'https://api.allfrom0.top';
 
         let currentEditId = null;
         const ADMIN_TOKEN = localStorage.getItem('questa_admin_token') || 'questa-admin-2024';
+
+        // 短縮形式 → API形式 変換
+        function convertToAPI(shortForm) {
+            const apiForm = {
+                id: shortForm.id,
+                subject: 'math',
+                title: shortForm.q.substring(0, 50), // 問題文の最初の50文字をタイトルに
+                question_text: shortForm.q,
+                correct_answer: shortForm.a,
+                explanation: shortForm.e || '',
+                difficulty_level: convertDifficulty(shortForm.d),
+                is_listening: false,
+                mode: null,
+                source: shortForm.src || 'learning-notebook'
+            };
+
+            // タグ
+            if (shortForm.tag && shortForm.tag.length > 0) {
+                apiForm.tags = JSON.stringify(shortForm.tag);
+            }
+
+            // 数学専用: a_raw (元の答え形式) を追加情報として保存
+            if (shortForm.a_raw) {
+                apiForm.answer_raw = shortForm.a_raw;
+            }
+
+            return apiForm;
+        }
+
+        // API形式 → 短縮形式 変換（表示用）
+        function convertFromAPI(apiForm) {
+            const shortForm = {
+                id: apiForm.id,
+                q: apiForm.question_text,
+                a: apiForm.correct_answer,
+                e: apiForm.explanation || '',
+                d: convertDifficultyReverse(apiForm.difficulty_level || apiForm.difficulty),
+                tag: apiForm.tags ? (typeof apiForm.tags === 'string' ? JSON.parse(apiForm.tags) : apiForm.tags) : [],
+                src: apiForm.source || ''
+            };
+
+            // 数学専用: a_raw
+            if (apiForm.answer_raw) {
+                shortForm.a_raw = apiForm.answer_raw;
+            }
+
+            return shortForm;
+        }
+
+        // 難易度変換 (1-5 の数値文字列 → "easy"/"medium"/"hard" または数値)
+        function convertDifficulty(d) {
+            if (!d) return 'easy';
+
+            // 既に"easy"/"medium"/"hard"の場合
+            if (['easy', 'medium', 'hard'].includes(d)) return d;
+
+            // 数値の場合
+            const num = parseInt(d);
+            if (num === 1) return 'easy';
+            if (num === 2) return 'easy';
+            if (num === 3) return 'medium';
+            if (num === 4) return 'hard';
+            if (num === 5) return 'hard';
+
+            return 'medium';
+        }
+
+        // 難易度逆変換 ("easy"/"medium"/"hard" → 1-5の数値文字列)
+        function convertDifficultyReverse(difficultyLevel) {
+            if (!difficultyLevel) return '2';
+
+            // 既に数値の場合はそのまま
+            if (['1', '2', '3', '4', '5'].includes(difficultyLevel)) return difficultyLevel;
+
+            // 文字列の場合は変換（中間値を返す）
+            if (difficultyLevel === 'easy') return '2';
+            if (difficultyLevel === 'medium') return '3';
+            if (difficultyLevel === 'hard') return '4';
+
+            return '2';
+        }
 
         // ページ読み込み時に実行
         document.addEventListener('DOMContentLoaded', () => {
@@ -428,25 +521,22 @@
                     return;
                 }
 
-                // フォームに既存データを設定
+                // API形式 → 短縮形式に変換
+                const shortForm = convertFromAPI(question);
+
+                // フォームに既存データを設定（短縮形式）
                 currentEditId = questionId;
                 document.getElementById('modalTitle').textContent = '数学問題を編集';
-                document.getElementById('inputTitle').value = question.title || '';
-                document.getElementById('inputQuestion').value = question.question_text || '';
-                document.getElementById('inputAnswer').value = question.correct_answer || '';
-                document.getElementById('inputDifficulty').value = question.difficulty_level || '';
-                document.getElementById('inputExplanation').value = question.explanation || '';
+                document.getElementById('inputQuestion').value = shortForm.q || '';
+                document.getElementById('inputAnswer').value = shortForm.a || '';
+                document.getElementById('inputAnswerRaw').value = shortForm.a_raw || '';
+                document.getElementById('inputExplanation').value = shortForm.e || '';
+                document.getElementById('inputDifficulty').value = shortForm.d || '1';
+                document.getElementById('inputSource').value = shortForm.src || '';
 
                 // カテゴリを設定
-                if (question.tags) {
-                    try {
-                        const tags = JSON.parse(question.tags);
-                        if (tags.length > 0) {
-                            document.getElementById('inputCategory').value = tags[0];
-                        }
-                    } catch (e) {
-                        console.error('Error parsing tags:', e);
-                    }
+                if (shortForm.tag && shortForm.tag.length > 0) {
+                    document.getElementById('inputCategory').value = shortForm.tag[0];
                 }
 
                 updatePreview();
@@ -483,24 +573,26 @@
         async function handleSubmit(event) {
             event.preventDefault();
 
-            const formData = {
+            // 短縮形式でデータ構築
+            const shortForm = {
                 id: currentEditId || `math_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-                subject: 'math',
-                title: document.getElementById('inputTitle').value,
-                question_text: document.getElementById('inputQuestion').value,
-                correct_answer: document.getElementById('inputAnswer').value,
-                explanation: document.getElementById('inputExplanation').value,
-                difficulty_level: document.getElementById('inputDifficulty').value,
-                is_listening: false,
-                mode: null,
-                source: 'learning-notebook'
+                q: document.getElementById('inputQuestion').value,
+                a: document.getElementById('inputAnswer').value,
+                a_raw: document.getElementById('inputAnswerRaw')?.value || '',
+                e: document.getElementById('inputExplanation').value,
+                d: document.getElementById('inputDifficulty').value,
+                tag: [],
+                src: document.getElementById('inputSource')?.value || '自作'
             };
 
             // カテゴリをタグに追加
             const category = document.getElementById('inputCategory').value;
             if (category) {
-                formData.tags = JSON.stringify([category]);
+                shortForm.tag.push(category);
             }
+
+            // 短縮形式 → API形式に変換
+            const apiData = convertToAPI(shortForm);
 
             try {
                 const url = currentEditId
@@ -515,7 +607,7 @@
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${ADMIN_TOKEN}`
                     },
-                    body: JSON.stringify(formData)
+                    body: JSON.stringify(apiData)
                 });
 
                 if (response.ok) {

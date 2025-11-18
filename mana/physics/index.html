@@ -192,20 +192,23 @@
             <h3 id="modalTitle">物理問題を作成</h3>
             <form id="questionForm" onsubmit="handleSubmit(event)">
                 <div class="form-group">
-                    <label>問題タイトル</label>
-                    <input type="text" id="inputTitle" required placeholder="例: 速度の単位">
-                </div>
-                <div class="form-group">
                     <label>問題文（KaTeX数式対応）</label>
-                    <textarea id="inputQuestion" required placeholder="例: 速度の単位は？" oninput="updatePreview()"></textarea>
+                    <textarea id="inputQuestion" required placeholder="例: 斜面角θ、質量mの物体に働く垂直抗力Nを求めよ。" oninput="updatePreview()"></textarea>
                     <div class="katex-help">
                         数式は $...$ で囲んでください（例: $F = ma$）
                     </div>
                     <div class="formula-preview" id="questionPreview"></div>
                 </div>
                 <div class="form-group">
+                    <label>与えられた情報（任意）</label>
+                    <input type="text" id="inputGiven" placeholder="例: 斜面角θ、重力加速度g">
+                    <div class="katex-help">
+                        問題で与えられている定数や条件
+                    </div>
+                </div>
+                <div class="form-group">
                     <label>解答（KaTeX数式対応）</label>
-                    <input type="text" id="inputAnswer" required placeholder="例: $\text{m/s}$" oninput="updatePreview()">
+                    <input type="text" id="inputAnswer" required placeholder="例: $N = mg\cos\theta$" oninput="updatePreview()">
                     <div class="katex-help">
                         解答も数式形式で（例: $9.8 \text{ m/s}^2$）
                     </div>
@@ -213,30 +216,43 @@
                 </div>
                 <div class="form-group">
                     <label>解説（KaTeX数式対応・任意）</label>
-                    <textarea id="inputExplanation" placeholder="例: 速度は距離を時間で割ったもので、単位はメートル毎秒です。" oninput="updatePreview()"></textarea>
+                    <textarea id="inputExplanation" placeholder="例: 鉛直方向の力のつり合いより、N = mgcosθ。" oninput="updatePreview()"></textarea>
                     <div class="formula-preview" id="explanationPreview"></div>
                 </div>
                 <div class="form-group">
                     <label>難易度</label>
                     <select id="inputDifficulty" required>
                         <option value="">選択してください</option>
-                        <option value="easy">簡単（中学物理）</option>
-                        <option value="medium">普通（高校物理）</option>
-                        <option value="hard">難しい（大学入試）</option>
+                        <option value="1">1 - 基礎（中学物理）</option>
+                        <option value="2">2 - 標準（高校基礎）</option>
+                        <option value="3">3 - やや難（高校発展）</option>
+                        <option value="4">4 - 難問（大学入試）</option>
+                        <option value="5">5 - 超難問（東大・京大）</option>
                     </select>
                 </div>
                 <div class="form-group">
-                    <label>分野</label>
+                    <label>分野（任意）</label>
                     <select id="inputCategory">
                         <option value="">選択してください</option>
-                        <option value="mechanics">力学</option>
-                        <option value="electromagnetism">電磁気</option>
-                        <option value="waves">波動</option>
-                        <option value="thermodynamics">熱力学</option>
-                        <option value="optics">光学</option>
-                        <option value="quantum">量子力学</option>
-                        <option value="other">その他</option>
+                        <option value="力学">力学</option>
+                        <option value="電磁気">電磁気</option>
+                        <option value="波動">波動</option>
+                        <option value="熱力学">熱力学</option>
+                        <option value="光学">光学</option>
+                        <option value="量子力学">量子力学</option>
+                        <option value="その他">その他</option>
                     </select>
+                </div>
+                <div class="form-group">
+                    <label>出典（任意）</label>
+                    <input type="text" id="inputSource" placeholder="例: 共通テスト2024 第2問 / 自作 / 教科書p.120">
+                </div>
+                <div class="form-group">
+                    <label>画像URL（任意）</label>
+                    <input type="text" id="inputMediaUrl" placeholder="例: https://example.com/images/physics_001.png">
+                    <div class="katex-help">
+                        図やグラフの画像URL（R2ストレージ等）
+                    </div>
                 </div>
                 <div class="modal-actions">
                     <button type="button" onclick="closeModal('questionModal')" class="btn-danger">キャンセル</button>
@@ -248,10 +264,106 @@
 
     <script>
         // API Base URL
-        const API_BASE_URL = 'https://questa-r2-api.t88596565.workers.dev';
+        const API_BASE_URL = 'https://api.allfrom0.top';
 
         let currentEditId = null;
         const ADMIN_TOKEN = localStorage.getItem('questa_admin_token') || 'questa-admin-2024';
+
+        // 短縮形式 → API形式 変換
+        function convertToAPI(shortForm) {
+            const apiForm = {
+                id: shortForm.id,
+                subject: 'physics',
+                title: shortForm.q.substring(0, 50),
+                question_text: shortForm.q,
+                correct_answer: shortForm.a,
+                explanation: shortForm.e || '',
+                difficulty_level: convertDifficulty(shortForm.d),
+                is_listening: false,
+                mode: null,
+                source: shortForm.src || 'learning-notebook'
+            };
+
+            // タグ
+            if (shortForm.tag && shortForm.tag.length > 0) {
+                apiForm.tags = JSON.stringify(shortForm.tag);
+            }
+
+            // 物理専用: given (与えられた情報)
+            if (shortForm.given) {
+                apiForm.given = shortForm.given;
+            }
+
+            // 物理専用: media (画像など)
+            if (shortForm.media) {
+                if (typeof shortForm.media === 'object' && shortForm.media.image) {
+                    apiForm.media_urls = JSON.stringify([shortForm.media.image]);
+                } else if (typeof shortForm.media === 'string') {
+                    apiForm.media_urls = JSON.stringify([shortForm.media]);
+                }
+            }
+
+            return apiForm;
+        }
+
+        // API形式 → 短縮形式 変換（表示用）
+        function convertFromAPI(apiForm) {
+            const shortForm = {
+                id: apiForm.id,
+                q: apiForm.question_text,
+                a: apiForm.correct_answer,
+                e: apiForm.explanation || '',
+                d: convertDifficultyReverse(apiForm.difficulty_level || apiForm.difficulty),
+                tag: apiForm.tags ? (typeof apiForm.tags === 'string' ? JSON.parse(apiForm.tags) : apiForm.tags) : [],
+                src: apiForm.source || ''
+            };
+
+            // 物理専用: given
+            if (apiForm.given) {
+                shortForm.given = apiForm.given;
+            }
+
+            // 物理専用: media
+            if (apiForm.media_urls) {
+                try {
+                    const urls = typeof apiForm.media_urls === 'string' ? JSON.parse(apiForm.media_urls) : apiForm.media_urls;
+                    if (urls && urls.length > 0) {
+                        shortForm.media = { image: urls[0] };
+                    }
+                } catch (e) {
+                    console.error('Error parsing media_urls:', e);
+                }
+            }
+
+            return shortForm;
+        }
+
+        // 難易度変換 (1-5 → "easy"/"medium"/"hard")
+        function convertDifficulty(d) {
+            if (!d) return 'easy';
+            if (['easy', 'medium', 'hard'].includes(d)) return d;
+
+            const num = parseInt(d);
+            if (num === 1) return 'easy';
+            if (num === 2) return 'easy';
+            if (num === 3) return 'medium';
+            if (num === 4) return 'hard';
+            if (num === 5) return 'hard';
+
+            return 'medium';
+        }
+
+        // 難易度逆変換 ("easy"/"medium"/"hard" → 1-5)
+        function convertDifficultyReverse(difficultyLevel) {
+            if (!difficultyLevel) return '2';
+            if (['1', '2', '3', '4', '5'].includes(difficultyLevel)) return difficultyLevel;
+
+            if (difficultyLevel === 'easy') return '2';
+            if (difficultyLevel === 'medium') return '3';
+            if (difficultyLevel === 'hard') return '4';
+
+            return '2';
+        }
 
         // ページ読み込み時に実行
         document.addEventListener('DOMContentLoaded', () => {
@@ -412,7 +524,47 @@
 
         // 問題編集
         async function editQuestion(questionId) {
-            showMessage('問題編集機能は開発中です', 'info');
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/note/questions?subject=physics&limit=100`, {
+                    headers: {
+                        'Authorization': `Bearer ${ADMIN_TOKEN}`
+                    }
+                });
+
+                if (!response.ok) throw new Error('Failed to load questions for editing');
+
+                const data = await response.json();
+                const question = data.questions.find(q => q.id === questionId);
+
+                if (!question) {
+                    showMessage('問題が見つかりません', 'error');
+                    return;
+                }
+
+                // API形式 → 短縮形式に変換
+                const shortForm = convertFromAPI(question);
+
+                // フォームに既存データを設定（短縮形式）
+                currentEditId = questionId;
+                document.getElementById('modalTitle').textContent = '物理問題を編集';
+                document.getElementById('inputQuestion').value = shortForm.q || '';
+                document.getElementById('inputGiven').value = shortForm.given || '';
+                document.getElementById('inputAnswer').value = shortForm.a || '';
+                document.getElementById('inputExplanation').value = shortForm.e || '';
+                document.getElementById('inputDifficulty').value = shortForm.d || '2';
+                document.getElementById('inputSource').value = shortForm.src || '';
+                document.getElementById('inputMediaUrl').value = (shortForm.media && shortForm.media.image) || '';
+
+                // カテゴリを設定
+                if (shortForm.tag && shortForm.tag.length > 0) {
+                    document.getElementById('inputCategory').value = shortForm.tag[0];
+                }
+
+                updatePreview();
+                showModal('questionModal');
+            } catch (error) {
+                showMessage('問題読み込みエラー: ' + error.message, 'error');
+            }
         }
 
         // 問題削除
@@ -442,24 +594,37 @@
         async function handleSubmit(event) {
             event.preventDefault();
 
-            const formData = {
-                id: currentEditId || `physics_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-                subject: 'physics',
-                title: document.getElementById('inputTitle').value,
-                question_text: document.getElementById('inputQuestion').value,
-                correct_answer: document.getElementById('inputAnswer').value,
-                explanation: document.getElementById('inputExplanation').value,
-                difficulty_level: document.getElementById('inputDifficulty').value,
-                is_listening: false,
-                mode: null,
-                source: 'learning-notebook'
+            // 短縮形式でデータ構築
+            const shortForm = {
+                id: currentEditId || `phy_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+                q: document.getElementById('inputQuestion').value,
+                a: document.getElementById('inputAnswer').value,
+                e: document.getElementById('inputExplanation').value,
+                d: document.getElementById('inputDifficulty').value,
+                tag: [],
+                src: document.getElementById('inputSource')?.value || '自作'
             };
 
-            // 分野をタグに追加
+            // 与えられた情報
+            const given = document.getElementById('inputGiven').value;
+            if (given) {
+                shortForm.given = given;
+            }
+
+            // カテゴリをタグに追加
             const category = document.getElementById('inputCategory').value;
             if (category) {
-                formData.tags = JSON.stringify([category]);
+                shortForm.tag.push(category);
             }
+
+            // 画像URL
+            const mediaUrl = document.getElementById('inputMediaUrl').value;
+            if (mediaUrl) {
+                shortForm.media = { image: mediaUrl };
+            }
+
+            // 短縮形式 → API形式に変換
+            const apiData = convertToAPI(shortForm);
 
             try {
                 const url = currentEditId
@@ -474,7 +639,7 @@
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${ADMIN_TOKEN}`
                     },
-                    body: JSON.stringify(formData)
+                    body: JSON.stringify(apiData)
                 });
 
                 if (response.ok) {
