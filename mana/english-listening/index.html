@@ -207,12 +207,12 @@
                 <p class="stat">表示モード: <span id="viewMode">パッセージ単位</span></p>
             </div>
 
-            <div class="button-row">
-                <button onclick="showCreateModal()">🎵 新規単一問題作成</button>
-                <button onclick="showPassageModal()">📻 東大パッセージ作成</button>
-                <button onclick="showBulkUploadModal()">📦 JSON一括アップロード</button>
-                <button onclick="toggleViewMode()" class="btn-small">表示切替</button>
-                <button onclick="loadContent()" class="btn-small">再読込</button>
+            <div style="display: flex; gap: 10px; margin: 20px 0; flex-wrap: wrap;">
+                <button onclick="showCreateModal()" style="flex: 1; min-width: 150px;">🎵 新規単一問題作成</button>
+                <button onclick="showPassageModal()" style="flex: 1; min-width: 180px;">📻 東大パッセージ作成</button>
+                <button onclick="showBulkUploadModal()" style="flex: 1; min-width: 180px;">📦 JSON一括アップロード</button>
+                <button onclick="toggleViewMode()" style="flex: 1; min-width: 150px;" class="btn-small">表示切替</button>
+                <button onclick="loadContent()" style="flex: 1; min-width: 150px;" class="btn-small">再読込</button>
             </div>
 
             <div id="messageArea"></div>
@@ -389,7 +389,7 @@
 
     <script>
         // API Base URL
-        const API_BASE_URL = 'https://api.allfrom0.top';
+        const API_BASE_URL = 'https://questa-r2-api.t88596565.workers.dev';
 
         let currentEditId = null;
         let currentPassageData = null;

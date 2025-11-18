@@ -161,9 +161,9 @@
                 <p class="stat">難易度: <span id="difficultyFilter">全て</span></p>
             </div>
 
-            <div class="button-row">
-                <button onclick="showCreateModal()">新規作成</button>
-                <button onclick="loadContent()" class="btn-small">再読込</button>
+            <div style="display: flex; gap: 10px; margin: 20px 0; flex-wrap: wrap;">
+                <button onclick="showCreateModal()" style="flex: 1; min-width: 150px;">新規作成</button>
+                <button onclick="loadContent()" style="flex: 1; min-width: 150px;" class="btn-small">再読込</button>
             </div>
 
             <div id="messageArea"></div>
@@ -207,7 +207,7 @@
 
     <script>
         // API Base URL
-        const API_BASE_URL = 'https://api.allfrom0.top';
+        const API_BASE_URL = 'https://questa-r2-api.t88596565.workers.dev';
 
         let currentEditId = null;
         const ADMIN_TOKEN = localStorage.getItem('questa_admin_token') || 'questa-admin-2024';

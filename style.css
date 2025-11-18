@@ -2191,18 +2191,3 @@ button:active {
         padding: 18px;
     }
 }
-
-/* Mana管理画面：ボタン行の統一スタイル */
-.button-row {
-    display: flex;
-    gap: 10px;
-    margin: 20px 0;
-    flex-wrap: wrap;
-    align-items: center;
-}
-
-.button-row button {
-    flex: 1;
-    min-width: 150px;
-    min-height: auto;
-}
