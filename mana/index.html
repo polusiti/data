@@ -3,136 +3,80 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>問題管理 - 学習ノート</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Klee+One:wght@400;600&family=Zen+Kurenaido&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="../style.css">
+    <title>問題管理 - Mana</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #f5f5f5; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        h1 { font-size: 24px; margin-bottom: 10px; }
+        .subtitle { color: #666; margin-bottom: 20px; font-size: 14px; }
+        .button-row { display: flex; gap: 10px; margin-bottom: 20px; }
+        button { padding: 10px 16px; border: 1px solid #ddd; background: white; cursor: pointer; border-radius: 4px; font-size: 14px; }
+        button:hover { background: #f9f9f9; }
+        .logout-btn { background: #ef4444; color: white; border-color: #ef4444; }
+        .logout-btn:hover { background: #dc2626; }
+        .stats { display: flex; gap: 20px; margin-bottom: 20px; padding: 15px; background: white; border-radius: 4px; border: 1px solid #e0e0e0; }
+        .stat { font-size: 14px; color: #666; }
+        .stat span { font-weight: 600; color: #333; margin-left: 5px; }
+        .subject-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; }
+        .subject-card { background: white; padding: 30px 20px; border: 1px solid #e0e0e0; border-radius: 4px; cursor: pointer; text-align: center; transition: all 0.2s; }
+        .subject-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.1); transform: translateY(-2px); }
+        .subject-icon { font-size: 36px; font-weight: 600; margin-bottom: 10px; color: #333; }
+        .subject-name { font-size: 16px; font-weight: 600; margin-bottom: 8px; }
+        .subject-count { font-size: 13px; color: #666; }
+        .loading { text-align: center; padding: 40px; color: #666; }
+        .auth-screen { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .auth-card { background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 4px 16px rgba(0,0,0,0.2); max-width: 400px; width: 90%; }
+        .auth-card h2 { text-align: center; margin-bottom: 1.5rem; }
+        .form-group { margin-bottom: 1rem; }
+        .form-group label { display: block; margin-bottom: 0.5rem; font-weight: 600; }
+        .form-group input { width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 4px; }
+        .auth-btn { width: 100%; padding: 0.875rem; background: #667eea; color: white; border: none; border-radius: 4px; font-weight: 600; cursor: pointer; }
+        .error { background: #fef2f2; color: #ef4444; padding: 0.75rem; border-radius: 4px; margin-top: 1rem; font-size: 0.9rem; }
+        .hidden { display: none; }
+    </style>
 </head>
-
 <body>
     <!-- 認証画面 -->
-    <div id="auth-screen" style="display: none; min-height: 100vh; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
-        <div style="background: white; padding: 3rem; border-radius: 16px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); max-width: 400px; width: 90%;">
-            <h2 style="text-align: center; color: #333; margin-bottom: 0.5rem;">🔧 Mana管理画面</h2>
-            <p style="text-align: center; color: #666; margin-bottom: 2rem; font-size: 14px;">管理者認証が必要です</p>
-
-            <div style="margin-bottom: 1.5rem;">
-                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #374151;">管理者ID</label>
-                <input type="text" id="auth-id" placeholder="管理者ID" value="P37600"
-                       style="width: 100%; padding: 0.75rem; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 1rem;">
+    <div id="auth-screen" class="auth-screen hidden">
+        <div class="auth-card">
+            <h2>🔧 Mana管理画面</h2>
+            <div class="form-group">
+                <label>管理者ID</label>
+                <input type="text" id="auth-id" value="P37600">
             </div>
-
-            <div style="margin-bottom: 1.5rem;">
-                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #374151;">パスワード</label>
-                <input type="password" id="auth-password" placeholder="パスワード"
-                       style="width: 100%; padding: 0.75rem; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 1rem;">
+            <div class="form-group">
+                <label>パスワード</label>
+                <input type="password" id="auth-password">
             </div>
-
-            <button onclick="authenticate()" style="width: 100%; padding: 0.875rem; background: #667eea; color: white; border: none; border-radius: 8px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: all 0.2s;">
-                認証
-            </button>
-
-            <div id="auth-error" style="display: none; background: #fef2f2; color: #ef4444; padding: 0.75rem; border-radius: 8px; margin-top: 1rem; font-size: 0.9rem; border: 1px solid #fecaca;"></div>
+            <button class="auth-btn" onclick="authenticate()">認証</button>
+            <div id="auth-error" class="error hidden"></div>
         </div>
     </div>
 
     <!-- メイン画面 -->
-    <div class="notebook" id="main-screen" style="display: none;">
-        <div class="doodle-bg doodle-star">★</div>
-        <div class="doodle-bg doodle-heart">♡</div>
-        <div class="doodle-bg doodle-note">♪</div>
-        <div class="doodle-bg doodle-smile">☺</div>
-        <div class="doodle-bg doodle-check">✓</div>
-        <div class="doodle-bg doodle-arrow">→</div>
+    <div id="main-screen" class="container hidden">
+        <h1>問題管理</h1>
+        <p class="subtitle">科目を選んで問題を管理してください</p>
 
-        <div class="scribble scribble-1"></div>
-        <div class="scribble scribble-2"></div>
+        <div class="button-row">
+            <button onclick="location.href='subject-select.html'">← 学習ノートに戻る</button>
+            <button class="logout-btn" onclick="logout()">ログアウト</button>
+        </div>
 
-        <div class="container">
-            <div class="subject-select">
-                <h1>問題管理</h1>
+        <div class="stats">
+            <p class="stat">総問題数: <span id="totalQuestions">-</span></p>
+            <p class="stat">科目数: <span>6</span></p>
+        </div>
 
-                <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 20px;">
-                    <button class="back-btn" onclick="location.href='subject-select.html'" style="flex: 1;">← 学習ノートに戻る</button>
-                    <button onclick="logout()" style="flex: 1; padding: 12px; background: #ef4444; color: white; border: 2px solid #c53030; cursor: pointer; font-size: 14px; font-family: 'Klee One', cursive; font-weight: 600;">ログアウト</button>
-                </div>
-
-                <p class="subtitle">科目を選んで問題を管理してください</p>
-
-                <div class="stats" style="margin-bottom: 30px;">
-                    <p class="stat">総問題数: <span id="totalQuestions">0</span></p>
-                    <p class="stat">科目数: <span>6</span></p>
-                </div>
-
-                <div class="subject-grid" id="subjectGrid">
-                    <!-- 科目カードは動的に生成 -->
-                </div>
-            </div>
+        <div id="subjectGrid" class="subject-grid">
+            <div class="loading">読み込み中...</div>
         </div>
     </div>
 
     <script>
-        // 認証チェック
-        function checkAuth() {
-            const isAuthenticated = localStorage.getItem('mana_authenticated') === 'true';
-            if (isAuthenticated) {
-                document.getElementById('auth-screen').style.display = 'none';
-                document.getElementById('main-screen').style.display = 'block';
-                loadQuestionCounts();
-            } else {
-                document.getElementById('auth-screen').style.display = 'flex';
-                document.getElementById('main-screen').style.display = 'none';
-            }
-        }
+        const API_BASE_URL = 'https://api.allfrom0.top';
 
-        // 認証処理
-        function authenticate() {
-            const id = document.getElementById('auth-id').value;
-            const password = document.getElementById('auth-password').value;
-            const errorElement = document.getElementById('auth-error');
-
-            // 認証情報
-            const validCredentials = [
-                { id: 'P37600', password: 'l710645' }
-            ];
-
-            const isValid = validCredentials.some(cred =>
-                cred.id === id && cred.password === password
-            );
-
-            if (isValid) {
-                localStorage.setItem('mana_authenticated', 'true');
-                errorElement.style.display = 'none';
-                checkAuth();
-            } else {
-                errorElement.textContent = 'IDまたはパスワードが間違っています';
-                errorElement.style.display = 'block';
-                document.getElementById('auth-password').value = '';
-            }
-        }
-
-        // ログアウト処理
-        function logout() {
-            localStorage.removeItem('mana_authenticated');
-            location.reload();
-        }
-
-        // Enterキーで認証
-        document.addEventListener('DOMContentLoaded', () => {
-            const passwordInput = document.getElementById('auth-password');
-            if (passwordInput) {
-                passwordInput.addEventListener('keypress', (e) => {
-                    if (e.key === 'Enter') authenticate();
-                });
-            }
-            checkAuth();
-        });
-
-        // API Base URL
-        const API_BASE_URL = 'https://questa-r2-api.t88596565.workers.dev';
-
-        // 科目マッピング
         const subjectMapping = {
             'english-listening': 'english-listening',
             'english-vocabulary': 'english-vocabulary',
@@ -142,74 +86,103 @@
             'chemistry': 'chemistry'
         };
 
-        // 科目アイコンとURLマッピング
         const subjectInfo = {
-            'english-listening': { icon: '🎧', url: 'english-listening/' },
-            'english-vocabulary': { icon: 'A', url: 'english-vocabulary/' },
-            'english-grammar': { icon: 'G', url: 'english-grammar/' },
-            'math': { icon: '∑', url: 'math/' },
-            'physics': { icon: '⚛', url: 'physics/' },
-            'chemistry': { icon: '⚗', url: 'chemistry/' }
+            'english-listening': { icon: 'L', name: '英語リスニング', url: 'english-listening/' },
+            'english-vocabulary': { icon: 'A', name: '英語単語', url: 'english-vocabulary/' },
+            'english-grammar': { icon: 'G', name: '英文法', url: 'english-grammar/' },
+            'math': { icon: '∑', name: '数学', url: 'math/' },
+            'physics': { icon: '⚛', name: '物理', url: 'physics/' },
+            'chemistry': { icon: '⚗', name: '化学', url: 'chemistry/' }
         };
 
-        // ページ読み込み時に問題数を取得
+        // 認証チェック
+        function checkAuth() {
+            const isAuthenticated = localStorage.getItem('mana_authenticated') === 'true';
+            if (isAuthenticated) {
+                document.getElementById('auth-screen').classList.add('hidden');
+                document.getElementById('main-screen').classList.remove('hidden');
+                loadQuestionCounts();
+            } else {
+                document.getElementById('auth-screen').classList.remove('hidden');
+                document.getElementById('main-screen').classList.add('hidden');
+            }
+        }
+
+        // 認証処理
+        function authenticate() {
+            const id = document.getElementById('auth-id').value;
+            const password = document.getElementById('auth-password').value;
+            const errorElement = document.getElementById('auth-error');
+
+            const validCredentials = [{ id: 'P37600', password: 'l710645' }];
+            const isValid = validCredentials.some(cred => cred.id === id && cred.password === password);
+
+            if (isValid) {
+                localStorage.setItem('mana_authenticated', 'true');
+                errorElement.classList.add('hidden');
+                checkAuth();
+            } else {
+                errorElement.textContent = 'IDまたはパスワードが間違っています';
+                errorElement.classList.remove('hidden');
+                document.getElementById('auth-password').value = '';
+            }
+        }
+
+        // ログアウト
+        function logout() {
+            localStorage.removeItem('mana_authenticated');
+            location.reload();
+        }
+
+        // Enterキーで認証
+        document.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && !document.getElementById('auth-screen').classList.contains('hidden')) {
+                authenticate();
+            }
+        });
+
+        // 問題数読み込み（高速化：先にUIを表示してから非同期で更新）
         async function loadQuestionCounts() {
-            let totalCount = 0;
             const subjectGrid = document.getElementById('subjectGrid');
+            let totalCount = 0;
 
-            // 科目名マッピング
-            const subjectNames = {
-                'english-listening': '英語リスニング',
-                'english-vocabulary': '英語単語',
-                'english-grammar': '英文法',
-                'math': '数学',
-                'physics': '物理',
-                'chemistry': '化学'
-            };
-
+            // 先に空のカードを表示（高速化）
             let gridHTML = '';
-
             for (const [subject, apiSubject] of Object.entries(subjectMapping)) {
+                gridHTML += `
+                    <div class="subject-card" onclick="location.href='${subjectInfo[subject].url}'" id="card-${subject}">
+                        <div class="subject-icon">${subjectInfo[subject].icon}</div>
+                        <div class="subject-name">${subjectInfo[subject].name}</div>
+                        <p class="subject-count"><span id="count-${subject}">-</span> 問題</p>
+                    </div>
+                `;
+            }
+            subjectGrid.innerHTML = gridHTML;
+
+            // 非同期でカウント更新
+            const countPromises = Object.entries(subjectMapping).map(async ([subject, apiSubject]) => {
                 try {
                     const response = await fetch(`${API_BASE_URL}/api/note/questions?subject=${apiSubject}&limit=1`);
-                    let count = 0;
-
                     if (response.ok) {
                         const data = await response.json();
-                        count = data.total || data.questions?.length || 0;
-                        totalCount += count;
-                    } else {
-                        console.error(`Failed to load count for ${subject}:`, response.status);
+                        const count = data.total || data.questions?.length || 0;
+                        document.getElementById(`count-${subject}`).textContent = count;
+                        return count;
                     }
-
-                    gridHTML += `
-                        <div class="subject-card" onclick="location.href='${subjectInfo[subject].url}'">
-                            <div class="subject-icon">${subjectInfo[subject].icon}</div>
-                            <div class="subject-name">${subjectNames[subject]}</div>
-                            <p class="stat" style="margin-top: 10px; font-size: 14px;">
-                                <span id="count-${subject}">${count}</span> 問題
-                            </p>
-                        </div>
-                    `;
                 } catch (error) {
                     console.error(`Failed to load count for ${subject}:`, error);
-                    gridHTML += `
-                        <div class="subject-card" onclick="location.href='${subjectInfo[subject].url}'">
-                            <div class="subject-icon">${subjectInfo[subject].icon}</div>
-                            <div class="subject-name">${subjectNames[subject]}</div>
-                            <p class="stat" style="margin-top: 10px; font-size: 14px;">
-                                <span id="count-${subject}">?</span> 問題
-                            </p>
-                        </div>
-                    `;
+                    document.getElementById(`count-${subject}`).textContent = '?';
                 }
-            }
+                return 0;
+            });
 
-            subjectGrid.innerHTML = gridHTML;
+            const counts = await Promise.all(countPromises);
+            totalCount = counts.reduce((sum, count) => sum + count, 0);
             document.getElementById('totalQuestions').textContent = totalCount;
         }
 
-        // ページ初期化時に認証チェック（loadQuestionCounts は checkAuth() 内で呼ばれる）
+        // 初期化
+        checkAuth();
     </script>
 </body>
 </html>
