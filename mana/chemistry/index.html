@@ -185,6 +185,7 @@
 
             <div style="display: flex; gap: 10px; margin: 20px 0; flex-wrap: wrap;">
                 <button onclick="showCreateModal()" style="flex: 1; min-width: 150px;">新規作成</button>
+                <button onclick="showBulkUploadModal()" style="flex: 1; min-width: 150px;" class="btn-small">一括アップロード</button>
                 <button onclick="loadContent()" style="flex: 1; min-width: 150px;" class="btn-small">再読込</button>
             </div>
 
@@ -266,6 +267,32 @@
                     <button type="submit">保存</button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- 一括アップロードモーダル -->
+    <div id="bulkUploadModal" class="modal">
+        <div class="modal-content">
+            <h3>一括アップロード（JSON）</h3>
+            <div class="form-group">
+                <label>JSONファイルを選択</label>
+                <input type="file" id="bulkFileInput" accept=".json,.txt" style="width: 100%; padding: 12px; border: 2px solid var(--button-border); border-radius: 4px;">
+                <div class="katex-help">
+                    JSON配列形式のファイルを選択してください（例: [{id, q, a, e, d, tag, src}, ...]）
+                </div>
+            </div>
+            <div id="bulkPreview" style="margin: 15px 0; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 4px; max-height: 200px; overflow-y: auto; font-size: 12px; font-family: monospace; display: none;"></div>
+            <div id="bulkProgress" style="margin: 15px 0; display: none;">
+                <div style="margin-bottom: 10px; font-weight: 600;">処理中: <span id="bulkProgressText">0/0</span></div>
+                <div style="width: 100%; height: 20px; background: #f0f0f0; border-radius: 10px; overflow: hidden;">
+                    <div id="bulkProgressBar" style="width: 0%; height: 100%; background: linear-gradient(90deg, #667eea, #764ba2); transition: width 0.3s;"></div>
+                </div>
+            </div>
+            <div id="bulkResult" style="margin: 15px 0; padding: 15px; border-radius: 4px; display: none;"></div>
+            <div class="modal-actions">
+                <button type="button" onclick="closeModal('bulkUploadModal')" class="btn-danger">キャンセル</button>
+                <button type="button" id="bulkUploadBtn" onclick="handleBulkUpload()" disabled>アップロード開始</button>
+            </div>
         </div>
     </div>
 
@@ -675,6 +702,144 @@
                 }
             });
         });
+
+        // === 一括アップロード機能 ===
+        let bulkData = null;
+
+        // 一括アップロードモーダル表示
+        function showBulkUploadModal() {
+            bulkData = null;
+            document.getElementById('bulkFileInput').value = '';
+            document.getElementById('bulkPreview').style.display = 'none';
+            document.getElementById('bulkProgress').style.display = 'none';
+            document.getElementById('bulkResult').style.display = 'none';
+            document.getElementById('bulkUploadBtn').disabled = true;
+            showModal('bulkUploadModal');
+        }
+
+        // ファイル選択時の処理
+        document.addEventListener('DOMContentLoaded', () => {
+            const fileInput = document.getElementById('bulkFileInput');
+            if (fileInput) {
+                fileInput.addEventListener('change', handleFileSelect);
+            }
+        });
+
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const jsonData = JSON.parse(e.target.result);
+
+                    if (!Array.isArray(jsonData)) {
+                        showMessage('JSONファイルは配列形式である必要があります', 'error');
+                        return;
+                    }
+
+                    bulkData = jsonData;
+
+                    // プレビュー表示
+                    const preview = document.getElementById('bulkPreview');
+                    preview.innerHTML = `
+                        <div style="margin-bottom: 10px; font-weight: 600;">
+                            ファイル: ${file.name}<br>
+                            問題数: ${jsonData.length}件
+                        </div>
+                        <div style="max-height: 150px; overflow-y: auto; background: rgba(0,0,0,0.1); padding: 10px; border-radius: 4px;">
+                            ${JSON.stringify(jsonData.slice(0, 3), null, 2)}
+                            ${jsonData.length > 3 ? '\n... （' + (jsonData.length - 3) + '件省略）' : ''}
+                        </div>
+                    `;
+                    preview.style.display = 'block';
+                    document.getElementById('bulkUploadBtn').disabled = false;
+
+                } catch (error) {
+                    showMessage('JSONファイルの読み込みエラー: ' + error.message, 'error');
+                    bulkData = null;
+                    document.getElementById('bulkUploadBtn').disabled = true;
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        // 一括アップロード実行
+        async function handleBulkUpload() {
+            if (!bulkData || bulkData.length === 0) {
+                showMessage('アップロードするデータがありません', 'error');
+                return;
+            }
+
+            const progressDiv = document.getElementById('bulkProgress');
+            const progressText = document.getElementById('bulkProgressText');
+            const progressBar = document.getElementById('bulkProgressBar');
+            const resultDiv = document.getElementById('bulkResult');
+            const uploadBtn = document.getElementById('bulkUploadBtn');
+
+            progressDiv.style.display = 'block';
+            resultDiv.style.display = 'none';
+            uploadBtn.disabled = true;
+
+            let successCount = 0;
+            let errorCount = 0;
+            const errors = [];
+
+            for (let i = 0; i < bulkData.length; i++) {
+                const item = bulkData[i];
+                progressText.textContent = `${i + 1}/${bulkData.length}`;
+                progressBar.style.width = `${((i + 1) / bulkData.length) * 100}%`;
+
+                try {
+                    // 短縮形式 → API形式に変換
+                    const apiData = convertToAPI(item);
+
+                    const response = await fetch(`${API_BASE_URL}/api/note/questions`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${ADMIN_TOKEN}`
+                        },
+                        body: JSON.stringify(apiData)
+                    });
+
+                    if (response.ok) {
+                        successCount++;
+                    } else {
+                        errorCount++;
+                        const error = await response.json();
+                        errors.push(`ID: ${item.id} - ${error.error || '保存失敗'}`);
+                    }
+                } catch (error) {
+                    errorCount++;
+                    errors.push(`ID: ${item.id} - ${error.message}`);
+                }
+
+                // 少し待機（API負荷軽減）
+                await new Promise(resolve => setTimeout(resolve, 100));
+            }
+
+            // 結果表示
+            resultDiv.innerHTML = `
+                <div style="font-weight: 600; margin-bottom: 10px;">アップロード完了</div>
+                <div style="color: green; margin-bottom: 5px;">成功: ${successCount}件</div>
+                <div style="color: red; margin-bottom: 10px;">失敗: ${errorCount}件</div>
+                ${errors.length > 0 ? `
+                    <div style="max-height: 150px; overflow-y: auto; background: rgba(255,0,0,0.1); padding: 10px; border-radius: 4px; font-size: 11px;">
+                        ${errors.join('<br>')}
+                    </div>
+                ` : ''}
+            `;
+            resultDiv.style.display = 'block';
+            uploadBtn.disabled = false;
+
+            // 問題リスト再読込
+            if (successCount > 0) {
+                loadContent();
+                showMessage(`${successCount}件の問題をアップロードしました`, 'success');
+            }
+        }
     </script>
 </body>
 </html>
