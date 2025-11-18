@@ -78,7 +78,7 @@
                     <label>選択肢数</label>
                     <select id="choiceCount" onchange="updateChoiceInputs()">
                         <option value="4">4択</option>
-                        <option value="5">5択</option>
+                        <option value="5" selected>5択</option>
                     </select>
                 </div>
                 <div id="choicesContainer" class="choice-group">
@@ -98,6 +98,10 @@
                         <label>選択肢D</label>
                         <input type="text" id="inputChoiceD" required placeholder="選択肢D">
                     </div>
+                    <div class="form-group">
+                        <label>選択肢E</label>
+                        <input type="text" id="inputChoiceE" placeholder="選択肢E">
+                    </div>
                 </div>
                 <div class="form-group">
                     <label>正解（A-E）</label>
@@ -107,6 +111,7 @@
                         <option value="B">B</option>
                         <option value="C">C</option>
                         <option value="D">D</option>
+                        <option value="E">E</option>
                     </select>
                 </div>
                 <div class="form-group">
